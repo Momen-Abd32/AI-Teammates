@@ -7,6 +7,10 @@ CREATE TABLE IF NOT EXISTS tasks(id UUID PRIMARY KEY,company_id UUID NOT NULL RE
 CREATE TABLE IF NOT EXISTS memories(id UUID PRIMARY KEY,company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,scope TEXT NOT NULL CHECK(scope IN ('PRIVATE','PROJECT','TEAM','COMPANY')),content TEXT NOT NULL,embedding vector(1536),created_at TIMESTAMPTZ NOT NULL DEFAULT now());
 CREATE TABLE IF NOT EXISTS approvals(id UUID PRIMARY KEY,company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,task_id UUID REFERENCES tasks(id) ON DELETE SET NULL,action TEXT NOT NULL,reason TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'PENDING',decided_by UUID,created_at TIMESTAMPTZ NOT NULL DEFAULT now(),decided_at TIMESTAMPTZ);
 CREATE TABLE IF NOT EXISTS audit_logs(id UUID PRIMARY KEY,company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,actor_id UUID,agent_id UUID,action TEXT NOT NULL,resource TEXT,metadata JSONB NOT NULL DEFAULT '{}',created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS roles(id UUID PRIMARY KEY,company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,name TEXT NOT NULL,permissions JSONB NOT NULL DEFAULT '[]',UNIQUE(company_id,name));
+CREATE TABLE IF NOT EXISTS employee_roles(employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,PRIMARY KEY(employee_id,role_id));
 CREATE INDEX IF NOT EXISTS memories_agent_idx ON memories(agent_id);
+CREATE INDEX IF NOT EXISTS memories_company_idx ON memories(company_id);
 CREATE INDEX IF NOT EXISTS tasks_company_idx ON tasks(company_id);
 CREATE INDEX IF NOT EXISTS audit_company_idx ON audit_logs(company_id);
+CREATE INDEX IF NOT EXISTS memories_embedding_idx ON memories USING hnsw (embedding vector_cosine_ops);
