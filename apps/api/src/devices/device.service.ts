@@ -4,7 +4,7 @@ import { OrganizationService } from "../organization/organization.service";
 import { DeviceGateway } from "./device.gateway";
 import { DeviceRepository } from "./device.repository";
 
-const DEFAULT_DEVICE_PERMISSIONS=["device.files.read","device.files.write","device.terminal.execute","device.browser","device.screenshot"];
+const DEFAULT_DEVICE_PERMISSIONS=["device.files.read","device.browser","device.screenshot"];
 
 @Injectable()
 export class DeviceService {
