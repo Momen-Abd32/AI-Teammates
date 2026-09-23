@@ -49,7 +49,7 @@ export class ApprovalService {
   async decide(id:string,decidedBy:string,status:"APPROVED"|"REJECTED",companyId?:string) {
     const r=await this.db.query(
       `UPDATE approvals SET status=$1,decided_by=$2,decided_at=now()
-       WHERE id=$3 AND ($4::uuid IS NULL OR company_id=$4::uuid)
+       WHERE id=$3 AND status='PENDING' AND ($4::uuid IS NULL OR company_id=$4::uuid)
        RETURNING id,company_id AS "companyId",agent_id AS "agentId",task_id AS "taskId",
                  action,reason,status,decided_by AS "decidedBy"`,
       [status,decidedBy,id,companyId ?? null],
