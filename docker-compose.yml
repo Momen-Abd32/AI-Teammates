@@ -32,6 +32,7 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/ai_teammates
       REDIS_URL: redis://redis:6379
       AGENT_SERVICE_URL: http://agent-service:8000
+      AUTH_SECRET: ${AUTH_SECRET:-change-me-in-production}
     depends_on: [postgres,redis,agent-service,agent-worker]
     ports: ["3001:3001"]
   web:
