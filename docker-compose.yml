@@ -33,8 +33,6 @@ services:
       REDIS_URL: redis://redis:6379
       AGENT_SERVICE_URL: http://agent-service:8000
       AUTH_SECRET: ${AUTH_SECRET:-change-me-in-production}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
     depends_on: [postgres,redis,agent-service,agent-worker]
     ports: ["3001:3001"]
   web:
