@@ -1,0 +1,1 @@
+import{Injectable}from"@nestjs/common";import{ProjectRepository}from"./project.repository";@Injectable()export class ProjectService{constructor(private repo:ProjectRepository){}create(companyId:string,name:string){return this.repo.create(companyId,name)}list(companyId:string){return this.repo.list(companyId)}}
