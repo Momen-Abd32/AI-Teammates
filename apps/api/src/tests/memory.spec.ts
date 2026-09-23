@@ -1,0 +1,2 @@
+import{MemoryService}from"../memory/memory.service";
+describe("memory rules",()=>{it("rejects empty memory",async()=>{const repo:any={save:jest.fn()};const s=new MemoryService(repo);await expect(s.create({companyId:"c",agentId:"a",scope:"PRIVATE",content:" "})).rejects.toThrow()})})
