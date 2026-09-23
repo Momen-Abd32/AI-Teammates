@@ -1,0 +1,1 @@
+import{Global,Module}from"@nestjs/common";import{MemoryRepository}from"./memory.repository";import{TaskRepository}from"./task.repository";@Global()@Module({providers:[MemoryRepository,TaskRepository],exports:[MemoryRepository,TaskRepository]})export class RepositoryModule{}
