@@ -6,7 +6,7 @@ type ChatBody = {
   employeeId: string;
   companyId: string;
   role?: string;
-  message: string;
+  message: string;\n  conversationId?: string;
 };
 
 @Controller("agents")
