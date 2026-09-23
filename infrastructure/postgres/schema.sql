@@ -19,3 +19,4 @@ CREATE INDEX IF NOT EXISTS memories_company_idx ON memories(company_id);
 CREATE INDEX IF NOT EXISTS tasks_company_idx ON tasks(company_id);
 CREATE INDEX IF NOT EXISTS audit_company_idx ON audit_logs(company_id);
 CREATE INDEX IF NOT EXISTS memories_embedding_idx ON memories USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS tool_executions_company_idx ON tool_executions(company_id,created_at DESC);
