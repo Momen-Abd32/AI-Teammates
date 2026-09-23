@@ -30,6 +30,27 @@ export class AuthService {
     return payload;
   }
 
+  async registerCompany(input:{companyName:string;name:string;email:string;password:string}) {
+    if(input.password.length<10) throw new UnauthorizedException("Password must contain at least 10 characters");
+    const salt=randomBytes(16).toString("hex");
+    const hash=scryptSync(input.password,salt,64).toString("hex");
+    const passwordHash=salt+":"+hash;
+    return this.db.transaction(async client=>{
+      const company=await client.query(
+        `INSERT INTO companies(id,name) VALUES(gen_random_uuid(),$1) RETURNING id`,
+        [input.companyName.trim()],
+      );
+      const companyId=company.rows[0].id;
+      const employee=await client.query(
+        `INSERT INTO employees(id,company_id,name,email,role,password_hash)
+         VALUES(gen_random_uuid(),$1,$2,lower($3),'admin',$4)
+         RETURNING id`,
+        [companyId,input.name,input.email,passwordHash],
+      );
+      return this.issue(companyId,employee.rows[0].id);
+    });
+  }
+
   async register(input:{companyId:string;name:string;email:string;password:string;role?:string}){
     if(input.password.length<10) throw new UnauthorizedException("Password must contain at least 10 characters");
     const salt=randomBytes(16).toString("hex");
