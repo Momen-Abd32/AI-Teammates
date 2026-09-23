@@ -1,21 +1,7 @@
 from fastapi import FastAPI
-from pydantic import BaseModel, Field
+from .models import AgentRequest, AgentResponse
 
-app = FastAPI(title="AI Teammates Agent Service", version="0.1.0")
-
-
-class AgentRequest(BaseModel):
-    agent_id: str
-    employee_id: str
-    company_id: str
-    role: str = "software_engineer"
-    message: str = Field(min_length=1)
-
-
-class AgentResponse(BaseModel):
-    agent_id: str
-    status: str
-    response: str
+app = FastAPI(title="AI Teammates Agent Service", version="0.2.0")
 
 
 @app.get("/health")
@@ -25,14 +11,9 @@ def health() -> dict:
 
 @app.post("/v1/agents/respond", response_model=AgentResponse)
 def respond(request: AgentRequest) -> AgentResponse:
-    # Runtime integration point. CrewAI will be wired here after the
-    # application-level identity, authorization and memory context are supplied.
+    # The API is expected to authorize the context before reaching the runtime.
     response = (
-        f"Agent {request.agent_id} received your work request as a "
-        f"{request.role}: {request.message}"
+        f"Work agent {request.agent_id} ({request.role}) received: "
+        f"{request.message}"
     )
-    return AgentResponse(
-        agent_id=request.agent_id,
-        status="COMPLETED",
-        response=response,
-    )
+    return AgentResponse(agent_id=request.agent_id, status="COMPLETED", response=response)
