@@ -75,6 +75,8 @@ export default function MyAgent(){
       setMessages(prev=>[...prev,{id:"approval-"+Date.now(),sender:"SYSTEM",content:`Human approval required for: ${action}. Open Approvals to continue.`,createdAt:new Date().toISOString()}]);
     }else if(result.response){
       setMessages(prev=>[...prev,{id:"agent-"+Date.now(),sender:"AGENT",content:result.response,createdAt:new Date().toISOString()}]);
+    }else if(result.response){
+      setMessages(prev=>[...prev,{id:"agent-"+Date.now(),sender:"AGENT",content:result.response,createdAt:new Date().toISOString()}]);
     }else if(result.result){
       setMessages(prev=>[...prev,{id:"tool-"+Date.now(),sender:"AGENT",content:`Tool completed: ${JSON.stringify(result.result,null,2)}`,createdAt:new Date().toISOString()}]);
     }
