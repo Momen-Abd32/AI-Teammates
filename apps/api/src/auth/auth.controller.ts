@@ -10,11 +10,6 @@ export class AuthController{
    return this.auth.registerCompany(b);
  }
 
- @Post("register")
- register(@Body() b:{companyId:string;name:string;email:string;password:string;role?:string}){
-   return this.auth.register(b);
- }
-
  @Post("login")
  login(@Body() b:{email:string;password:string}){
    return this.auth.login(b.email,b.password);
