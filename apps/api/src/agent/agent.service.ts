@@ -5,6 +5,7 @@ import { OrganizationService } from "../organization/organization.service";
 import { MemoryService } from "../memory/memory.service";
 import { MemoryLearningService } from "../memory/memory-learning.service";
 import { ConversationService } from "../conversations/conversation.service";
+import { ActivityEventService } from "../activity/activity.event.service";
 
 @Injectable()
 export class AgentService {
@@ -17,6 +18,7 @@ export class AgentService {
     private memory:MemoryService,
     private learning:MemoryLearningService,
     private conversations:ConversationService,
+    private activity:ActivityEventService,
   ) {}
 
   async getAgent(agentId:string, companyId:string) {
@@ -62,6 +64,7 @@ export class AgentService {
     );
 
     this.audit.record({companyId:input.companyId,actorId:input.employeeId,agentId:input.agentId,action:"agent.chat",resource:input.agentId});
+    await this.activity.publish({type:"agent.started",companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId,conversationId:input.conversationId,message:"Agent started"});
 
     let conversationId=input.conversationId;
     if (conversationId) {
@@ -84,6 +87,8 @@ export class AgentService {
       8,
     );
 
+    await this.activity.publish({type:"memory.retrieved",companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId,conversationId,message:`Retrieved ${memories.length} memories`});
+
     const baseUrl = process.env.AGENT_SERVICE_URL ?? "http://localhost:8000";
     const response = await fetch(baseUrl + "/v1/agents/respond", {
       method:"POST",
@@ -98,9 +103,13 @@ export class AgentService {
       }),
     });
 
-    if(!response.ok) throw new BadGatewayException("Agent service request failed");
+    if(!response.ok){
+      await this.activity.publish({type:"agent.failed",companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId,conversationId,message:"Agent service request failed"});
+      throw new BadGatewayException("Agent service request failed");
+    }
     const result = await response.json() as {response?:string};
     if (result.response) {
+      await this.activity.publish({type:"agent.completed",companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId,conversationId,message:"Agent completed"});
       await this.conversations.addMessage(conversationId,input.companyId,input.employeeId,"AGENT",result.response);
       void this.learnFromConversation(input,result.response);
     }
