@@ -6,11 +6,12 @@ import{CollaborationService}from"../collaboration/collaboration.service";
 @Injectable()
 export class OrchestratorService{
  constructor(private org:OrganizationService,private tasks:TaskService,private collaboration:CollaborationService){}
- async dispatch(input:{companyId:string;senderAgentId:string;receiverAgentId:string;title:string;description:string;projectId?:string}){
+ async dispatch(input:{companyId:string;senderAgentId:string;receiverAgentId:string;title:string;description:string;projectId?:string;employeeId:string}){
   const agents=await this.org.agents(input.companyId);
   const sender=agents.find(a=>a.id===input.senderAgentId);
   const receiver=agents.find(a=>a.id===input.receiverAgentId);
   if(!sender||!receiver)throw new ForbiddenException("Both agents must belong to the company");
+  if(sender.employeeId!==input.employeeId)throw new ForbiddenException("Sender agent does not belong to the authenticated employee");
   if(sender.id===receiver.id)throw new ForbiddenException("An agent cannot delegate to itself");
   const task=await this.tasks.create({
    companyId:input.companyId,
