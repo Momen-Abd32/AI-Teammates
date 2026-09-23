@@ -29,6 +29,16 @@ export class ToolExecutionService{
   return this.executeAllowed(input,execution.id);
  }
 
+ async reject(executionId:string,approvalId:string,decidedBy:string){
+  const execution=await this.executions.get(executionId);
+  if(!execution) throw new ForbiddenException("Tool execution not found");
+  const approval=await this.approvals.decide(approvalId,decidedBy,"REJECTED",execution.companyId);
+  if(approval.status!=="REJECTED"||approval.companyId!==execution.companyId) throw new ForbiddenException("Approval mismatch");
+  const completed=await this.executions.complete(executionId,"REJECTED",{reason:"Human rejected the requested action"});
+  await this.audit.record({companyId:execution.companyId,actorId:decidedBy,agentId:execution.agentId,action:"TOOL_REJECTED",resource:execution.action,metadata:{executionId,approvalId}});
+  return {execution:completed};
+ }
+
  async approveAndExecute(executionId:string,approvalId:string,decidedBy:string){
   const execution=await this.executions.get(executionId);
   if(!execution) throw new ForbiddenException("Tool execution not found");
