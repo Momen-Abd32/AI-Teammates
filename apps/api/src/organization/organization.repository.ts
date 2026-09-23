@@ -51,8 +51,6 @@ export class OrganizationRepository {
     const r = await this.db.query(
       `INSERT INTO agents(id,company_id,employee_id,role,system_instructions,permissions)
        VALUES(gen_random_uuid(),$1,$2,$3,$4,$5::jsonb)
-       ON CONFLICT(employee_id) DO UPDATE
-       SET role=EXCLUDED.role,system_instructions=EXCLUDED.system_instructions
        RETURNING id,company_id AS "companyId",employee_id AS "employeeId",role,system_instructions AS "systemInstructions",permissions`,
       [companyId,employeeId,role,instructions,JSON.stringify(DEFAULT_AGENT_PERMISSIONS)],
     );
