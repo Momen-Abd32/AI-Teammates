@@ -1,13 +1,14 @@
+import {apiFetch} from "../../lib/auth";
 "use client";
 import {useEffect,useState} from "react";
 const API=process.env.NEXT_PUBLIC_API_URL??"http://localhost:3001/api";
 export default function Tasks(){
  const [tasks,setTasks]=useState<any[]>([]); const [title,setTitle]=useState(""); const [busy,setBusy]=useState(false);
- const load=()=>fetch(API+"/tasks/company/company-demo").then(r=>r.json()).then(setTasks);
+ const load=()=>apiFetch("/tasks/company/company-demo").then(r=>r.json()).then(setTasks);
  useEffect(()=>{load().catch(()=>{});},[]);
  async function create(){
   if(!title.trim()) return; setBusy(true);
-  await fetch(API+"/tasks",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({companyId:"company-demo",title,description:"Created from workspace"})});
+  await apiFetch("/tasks",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({companyId:"company-demo",title,description:"Created from workspace"})});
   setTitle("");setBusy(false);load();
  }
  return <main style={{maxWidth:1000,margin:"40px auto",fontFamily:"Arial",padding:24}}>
