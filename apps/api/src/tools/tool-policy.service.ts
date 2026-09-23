@@ -14,7 +14,7 @@ export class ToolPolicyService{
   const agents=await this.org.agents(input.companyId);
   const agent=agents.find(a=>a.id===input.agentId);
   if(!agent||agent.employeeId!==input.employeeId) throw new ForbiddenException("Agent ownership check failed");
-  try{this.permissions.assertWithPermissions(input.name,tool.permission,agent.permissions);}
+  try{this.permissions.assertWithPermissions({companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId},tool.permission,agent.permissions);}
   catch{throw new ForbiddenException(`Missing permission: ${tool.permission}`);}
   return {allowed:true,requiresApproval:tool.requiresApproval,reason:tool.requiresApproval?"Human approval required for this action":"Policy allows this action"};
  }
