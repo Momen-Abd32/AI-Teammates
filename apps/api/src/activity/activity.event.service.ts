@@ -1,9 +1,10 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import Redis from "ioredis";
+import {randomUUID} from "crypto";
 
 export type ActivityEvent = {
   id:string;
-  type:"agent.started"|"memory.retrieved"|"tool.started"|"tool.completed"|"agent.delegated"|"approval.required"|"agent.completed"|"agent.failed";
+  type:"agent.started"|"memory.retrieved"|"tool.started"|"tool.completed"|"agent.delegated"|"approval.required"|"approval.approved"|"approval.rejected"|"agent.completed"|"agent.failed";
   companyId:string;
   employeeId:string;
   agentId:string;
@@ -32,7 +33,7 @@ export class ActivityEventService implements OnModuleInit, OnModuleDestroy {
   }
 
   async publish(input:Omit<ActivityEvent,"id"|"timestamp">){
-    const event:ActivityEvent={...input,id:crypto.randomUUID(),timestamp:new Date().toISOString()};
+    const event:ActivityEvent={...input,id:randomUUID(),timestamp:new Date().toISOString()};
     await this.publisher.publish("agent-activity",JSON.stringify(event));
     return event;
   }
