@@ -5,7 +5,9 @@ import {CurrentUser} from "../auth/current-user.decorator";
 @Controller("approvals")
 export class ApprovalController{
  constructor(private readonly approvals:ApprovalService){}
- @Get("company/:companyId") list(@Param("companyId") companyId:string){return this.approvals.list(companyId);}
+ @Get("company/:companyId") list(@Param("companyId") companyId:string,@CurrentUser()user:any){
+  return this.approvals.list(companyId,user.employeeId,user.role);
+ }
  @Post() request(@Body() body:{companyId:string;agentId:string;taskId?:string;action:string;reason:string},@CurrentUser()user:any){
   return this.approvals.request(body,user.employeeId);
  }
