@@ -1,0 +1,2 @@
+import{ForbiddenException}from"@nestjs/common";import{PermissionService}from"../security/permission.service";
+describe("permission isolation",()=>{it("denies missing permission",()=>{const p=new PermissionService();expect(()=>p.assert({companyId:"c1",employeeId:"e1",agentId:"a1"},"memory.read")).toThrow(ForbiddenException)});it("does not leak permissions between agents",()=>{const p=new PermissionService();p.grant("a1","memory.read");expect(()=>p.assert({companyId:"c2",employeeId:"e2",agentId:"a2"},"memory.read")).toThrow(ForbiddenException)})})
