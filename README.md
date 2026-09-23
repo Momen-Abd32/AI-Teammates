@@ -1,22 +1,20 @@
 # AI Teammates
-
-A multi-tenant SaaS where every employee gets a personal AI teammate that learns work context, collaborates with other agents, and operates under company permissions.
-
-## Stack
-
-- Next.js + TypeScript
-- NestJS + TypeScript
-- Python + FastAPI + CrewAI
-- PostgreSQL + pgvector
-- Redis + WebSocket
-- Docker
-
-## Principle
-
-> The Agent learns the employee's work, not the employee.
+A multi-tenant AI workforce platform where every employee has a personal AI teammate.
 
 ## Architecture
+Next.js -> NestJS -> PostgreSQL/pgvector + Redis -> Python/FastAPI Agent Runtime -> tools/sandbox.
 
-Company -> Employees -> Personal Agents -> Tasks / Memory / Tools / Collaboration / Approvals / Audit
+## Principles
+- The agent learns work, not the person.
+- Authorization is enforced outside the LLM.
+- Private memory is isolated.
+- Sensitive actions require human approval.
+- Important actions are auditable.
 
-CrewAI is the runtime layer; company identity, tenancy, authorization, memory policy, tasks and audit are owned by this application.
+## Development
+Copy .env.example to .env.
+Start infrastructure with docker compose up -d postgres redis.
+Run API, web, and agent-service from their workspaces.
+
+## Status
+Core architecture is implemented. Remaining production hardening includes full OIDC/JWT integration, persistent authorization on every route, isolated code execution, encryption and secret management, comprehensive integration/E2E tests, and deployment automation.
