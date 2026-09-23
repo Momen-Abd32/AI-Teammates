@@ -32,6 +32,7 @@ export class ToolExecutionService{
  async reject(executionId:string,approvalId:string,decidedBy:string){
   const execution=await this.executions.get(executionId);
   if(!execution) throw new ForbiddenException("Tool execution not found");
+  if(execution.status!=="WAITING_FOR_HUMAN") throw new ForbiddenException("Tool execution is not awaiting approval");
   const approval=await this.approvals.decide(approvalId,decidedBy,"REJECTED",execution.companyId);
   if(approval.status!=="REJECTED"||approval.companyId!==execution.companyId) throw new ForbiddenException("Approval mismatch");
   const completed=await this.executions.complete(executionId,"REJECTED",{reason:"Human rejected the requested action"});
@@ -42,6 +43,7 @@ export class ToolExecutionService{
  async approveAndExecute(executionId:string,approvalId:string,decidedBy:string){
   const execution=await this.executions.get(executionId);
   if(!execution) throw new ForbiddenException("Tool execution not found");
+  if(execution.status!=="WAITING_FOR_HUMAN") throw new ForbiddenException("Tool execution is not awaiting approval");
   const approval=await this.approvals.decide(approvalId,decidedBy,"APPROVED",execution.companyId);
   if(approval.status!=="APPROVED"||approval.companyId!==execution.companyId) throw new ForbiddenException("Approval mismatch");
   const result=await this.executeTool(execution.action,execution.agentId,execution.arguments);
@@ -70,13 +72,15 @@ export class ToolExecutionService{
    const headers:Record<string,string>={"Accept":"application/vnd.github+json","Authorization":`Bearer ${token}`,"X-GitHub-Api-Version":"2022-11-28"};
    if(name==="repository.read"){
     const path=String(args.path??"");
-    const response=await fetch(`${api}/repos/${repository}/contents/${path}`,{headers});
+    const response=await fetch(`${api}/repos/${repository}/contents/${path}`,{headers,signal:AbortSignal.timeout(15000)});
     if(!response.ok) throw new ForbiddenException("GitHub repository read failed");
-    const data=await response.json() as any;
+    const raw=await response.text();
+    if(raw.length>1024*1024) throw new ForbiddenException("GitHub response exceeds the 1 MB tool output limit");
+    const data=JSON.parse(raw) as any;
     return {name:data.name,path:data.path,sha:data.sha,content:data.encoding==="base64"?Buffer.from(data.content.replace(/\\n/g,""),"base64").toString("utf8"):data.content,type:data.type};
    }
    if(name==="issue.create"){
-    const response=await fetch(`${api}/repos/${repository}/issues`,{method:"POST",headers:{"content-type":"application/json",...headers},body:JSON.stringify({title:String(args.title??""),body:String(args.body??""),labels:Array.isArray(args.labels)?args.labels:[]})});
+    const response=await fetch(`${api}/repos/${repository}/issues`,{method:"POST",headers:{"content-type":"application/json",...headers},body:JSON.stringify({title:String(args.title??""),body:String(args.body??""),labels:Array.isArray(args.labels)?args.labels:[]}),signal:AbortSignal.timeout(15000)});
     if(!response.ok) throw new ForbiddenException("GitHub issue creation failed");
     const data=await response.json() as any;
     return {id:data.id,number:data.number,url:data.html_url,title:data.title};
@@ -87,7 +91,7 @@ export class ToolExecutionService{
     const content=Buffer.from(String(args.content??"")).toString("base64");
     const body:any={message,content};
     if(args.sha) body.sha=String(args.sha);
-    const response=await fetch(`${api}/repos/${repository}/contents/${path}`,{method:"PUT",headers:{"content-type":"application/json",...headers},body:JSON.stringify(body)});
+    const response=await fetch(`${api}/repos/${repository}/contents/${path}`,{method:"PUT",headers:{"content-type":"application/json",...headers},body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
     if(!response.ok) throw new ForbiddenException("GitHub repository write failed");
     const data=await response.json() as any;
     return {path:data.content?.path,sha:data.content?.sha,url:data.content?.html_url};
@@ -96,7 +100,7 @@ export class ToolExecutionService{
     const path=String(args.path??"");
     const sha=String(args.sha??"");
     const message=String(args.message??"");
-    const response=await fetch(`${api}/repos/${repository}/contents/${path}`,{method:"DELETE",headers:{"content-type":"application/json",...headers},body:JSON.stringify({message,sha})});
+    const response=await fetch(`${api}/repos/${repository}/contents/${path}`,{method:"DELETE",headers:{"content-type":"application/json",...headers},body:JSON.stringify({message,sha}),signal:AbortSignal.timeout(15000)});
     if(!response.ok) throw new ForbiddenException("GitHub repository delete failed");
     return {deleted:true,path};
    }
