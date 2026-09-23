@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { randomUUID } from "crypto";
 import { DatabaseService } from "../infrastructure/database.service";
 
 export type AgentRunStatus = "RUNNING"|"WAITING_FOR_HUMAN"|"COMPLETED"|"REJECTED"|"FAILED"|"STEP_LIMIT_REACHED";
@@ -10,12 +11,12 @@ export class AgentRunRepository {
 
   async create(input:{companyId:string;employeeId:string;agentId:string;conversationId?:string;message:string;maxSteps?:number}){
     const r=await this.db.query(`INSERT INTO agent_runs(id,company_id,employee_id,agent_id,conversation_id,message,max_steps)
-      VALUES(gen_random_uuid(),$1,$2,$3,$4,$5,$6)
+      VALUES($1,$2,$3,$4,$5,$6,$7)
       RETURNING id,company_id AS "companyId",employee_id AS "employeeId",agent_id AS "agentId",
         conversation_id AS "conversationId",message,status,current_step AS "currentStep",max_steps AS "maxSteps",
         results,waiting_execution_id AS "waitingExecutionId",waiting_approval_id AS "waitingApprovalId",
         created_at AS "createdAt",updated_at AS "updatedAt",completed_at AS "completedAt"`,
-      [input.companyId,input.employeeId,input.agentId,input.conversationId??null,input.message,input.maxSteps??5]);
+      [randomUUID(),input.companyId,input.employeeId,input.agentId,input.conversationId??null,input.message,input.maxSteps??5]);
     return r.rows[0];
   }
 
