@@ -1,21 +1,26 @@
 services:
   postgres:
     image: pgvector/pgvector:pg17
-    environment:
-      POSTGRES_DB: ai_teammates
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+    environment: {POSTGRES_DB: ai_teammates,POSTGRES_USER: postgres,POSTGRES_PASSWORD: postgres}
     ports: ["5432:5432"]
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./infrastructure/postgres/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
-
+    volumes: [postgres_data:/var/lib/postgresql/data,./infrastructure/postgres/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro]
   redis:
     image: redis:8-alpine
     ports: ["6379:6379"]
-    volumes:
-      - redis_data:/data
-
-volumes:
-  postgres_data:
-  redis_data:
+    volumes: [redis_data:/data]
+  agent-service:
+    build: ./apps/agent-service
+    environment: [REDIS_URL=redis://redis:6379]
+    depends_on: [redis,postgres]
+    ports: ["8000:8000"]
+  api:
+    build: ./apps/api
+    environment: [DATABASE_URL=postgresql://postgres:postgres@postgres:5432/ai_teammates,REDIS_URL=redis://redis:6379,AGENT_SERVICE_URL=http://agent-service:8000]
+    depends_on: [postgres,redis,agent-service]
+    ports: ["3001:3001"]
+  web:
+    build: ./apps/web
+    environment: [NEXT_PUBLIC_API_URL=http://localhost:3001/api]
+    depends_on: [api]
+    ports: ["3000:3000"]
+volumes: {postgres_data: null,redis_data: null}
