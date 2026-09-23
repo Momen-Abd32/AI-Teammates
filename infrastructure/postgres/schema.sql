@@ -20,3 +20,8 @@ CREATE INDEX IF NOT EXISTS tasks_company_idx ON tasks(company_id);
 CREATE INDEX IF NOT EXISTS audit_company_idx ON audit_logs(company_id);
 CREATE INDEX IF NOT EXISTS memories_embedding_idx ON memories USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX IF NOT EXISTS tool_executions_company_idx ON tool_executions(company_id,created_at DESC);
+\nCREATE TABLE IF NOT EXISTS conversations(id UUID PRIMARY KEY,company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,title TEXT NOT NULL DEFAULT 'New conversation',created_at TIMESTAMPTZ NOT NULL DEFAULT now(),updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS conversation_messages(id UUID PRIMARY KEY,conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,sender TEXT NOT NULL CHECK(sender IN ('USER','AGENT','SYSTEM')),content TEXT NOT NULL,created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE INDEX IF NOT EXISTS conversations_employee_idx ON conversations(employee_id,updated_at DESC);
+CREATE INDEX IF NOT EXISTS conversations_agent_idx ON conversations(agent_id,updated_at DESC);
+CREATE INDEX IF NOT EXISTS conversation_messages_conversation_idx ON conversation_messages(conversation_id,created_at);
