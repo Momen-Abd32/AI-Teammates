@@ -58,6 +58,10 @@ export class DeviceService {
     if(!binding) throw new ForbiddenException("Agent is not bound to this device");
     const permissions=Array.isArray(binding.permissions)?binding.permissions:[];
     if(!permissions.includes(input.action)) throw new ForbiddenException("Device permission denied");
+    if(input.action==="device.terminal.execute" && !permissions.includes("device.terminal.execute"))
+      throw new ForbiddenException("Terminal access is not enabled for this agent");
+    if(input.action==="device.files.write" && !permissions.includes("device.files.write"))
+      throw new ForbiddenException("File write access is not enabled for this agent");
     const command=await this.repo.createCommand({id:randomUUID(),companyId:input.companyId,deviceId:input.deviceId,agentId:input.agentId,action:input.action,arguments:input.arguments ?? {}});
     await this.gateway.sendCommand(command);
     return command;
