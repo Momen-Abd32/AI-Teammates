@@ -8,7 +8,7 @@ export class ToolRegistry{
   {name:"repository.write",description:"Create or modify repository content",permission:"repository.write",sensitive:true,requiresApproval:true},
   {name:"repository.delete",description:"Delete repository content",permission:"repository.delete",sensitive:true,requiresApproval:true},
   {name:"terminal.execute",description:"Execute code in the isolated worker sandbox",permission:"terminal.execute",sensitive:true,requiresApproval:true},
-  {name:"issue.create",description:"Create an issue in the project tracker",permission:"issue.create",sensitive:false,requiresApproval:false},
+  {name:"issue.create",description:"Create an issue in the project tracker",permission:"issue.create",sensitive:true,requiresApproval:true},
  ];
  list(){return [...this.tools];}
  get(name:string){return this.tools.find(t=>t.name===name);}
