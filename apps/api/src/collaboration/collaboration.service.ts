@@ -7,7 +7,7 @@ import {OrganizationService} from "../organization/organization.service";
 @Injectable()
 export class CollaborationService {
   constructor(private bus:MessageBusService,private messages:MessageRepository,private activity:ActivityEventService,private org:OrganizationService){}
-  async requestTask(input:AgentTaskMessage){
+  async requestTask(input:AgentTaskMessage,requesterEmployeeId?:string){
     if(input.senderAgentId===input.receiverAgentId) throw new ForbiddenException("An agent cannot delegate to itself");
     if(!input.companyId || !input.taskId) throw new ForbiddenException("Company and task context are required");
     if(!input.receiverAgentId) throw new ForbiddenException("Receiver agent is required");
@@ -15,6 +15,7 @@ export class CollaborationService {
     const sender=agents.find(agent=>agent.id===input.senderAgentId);
     const receiver=agents.find(agent=>agent.id===input.receiverAgentId);
     if(!sender || !receiver) throw new ForbiddenException("Both agents must belong to the company");
+    if(requesterEmployeeId && sender.employeeId!==requesterEmployeeId) throw new ForbiddenException("Sender agent does not belong to the authenticated employee");
     await this.messages.create({...input,type:"TASK_REQUEST"});
     await this.activity.publish({
       type:"agent.delegated",
