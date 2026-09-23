@@ -1,9 +1,1 @@
-import { Controller, Get } from "@nestjs/common";
-
-@Controller("health")
-export class HealthController {
-  @Get()
-  health() {
-    return { status: "ok", service: "api" };
-  }
-}
+import{Controller,Get}from"@nestjs/common";import{DatabaseService}from"./infrastructure/database.service";import{RedisService}from"./infrastructure/redis.service";@Controller("health")export class HealthController{constructor(private db:DatabaseService,private redis:RedisService){}@Get()async health(){const checks={database:"down",redis:"down"};try{await this.db.query("SELECT 1");checks.database="up"}catch{}try{await this.redis.client.ping();checks.redis="up"}catch{}return{status:checks.database==="up"&&checks.redis==="up"?"ok":"degraded",checks}}}
