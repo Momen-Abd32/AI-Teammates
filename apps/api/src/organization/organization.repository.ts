@@ -23,6 +23,22 @@ export class OrganizationRepository {
     return r.rows[0];
   }
 
+  async employee(employeeId:string) {
+    const r = await this.db.query(
+      'SELECT id,company_id AS "companyId",name,email,role FROM employees WHERE id=$1',
+      [employeeId],
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async employeeByEmail(email:string) {
+    const r = await this.db.query(
+      'SELECT id,company_id AS "companyId",name,email,role FROM employees WHERE lower(email)=lower($1)',
+      [email],
+    );
+    return r.rows[0] ?? null;
+  }
+
   async createEmployee(companyId:string,name:string,email:string,role:string) {
     const r = await this.db.query(
       "INSERT INTO employees(id,company_id,name,email,role) VALUES(gen_random_uuid(),$1,$2,$3,$4) RETURNING id,company_id AS \"companyId\",name,email,role",
