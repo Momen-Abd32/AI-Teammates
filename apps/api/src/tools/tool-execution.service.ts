@@ -29,7 +29,7 @@ export class ToolExecutionService{
  async approveAndExecute(executionId:string,approvalId:string,decidedBy:string){
   const execution=await this.executions.get(executionId);
   if(!execution) throw new ForbiddenException("Tool execution not found");
-  const approval=await this.approvals.decide(approvalId,decidedBy,"APPROVED");
+  const approval=await this.approvals.decide(approvalId,decidedBy,"APPROVED",execution.companyId);
   if(approval.status!=="APPROVED"||approval.companyId!==execution.companyId) throw new ForbiddenException("Approval mismatch");
   const result={status:"EXECUTED",action:execution.action,resource:execution.resource,arguments:execution.arguments};
   const completed=await this.executions.complete(executionId,"COMPLETED",result);
