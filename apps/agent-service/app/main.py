@@ -6,19 +6,15 @@ from .collaboration import AgentTaskMessage, TaskResult, execute_task
 from .memory import rank_memories, WorkMemory
 from .runtime import run_task
 
-app = FastAPI(title="AI Teammates Agent Service", version="0.8.0")
+app = FastAPI(title="AI Teammates Agent Service", version="0.9.0")
 
 @app.get("/health")
 def health():
-    return {
-        "status": "ok",
-        "service": "agent-service",
-        "llm_configured": bool(os.getenv("OPENAI_API_KEY")),
-    }
+    return {"status": "ok", "service": "agent-service", "llm_configured": bool(os.getenv("OPENAI_API_KEY"))}
 
 @app.post("/v1/agents/respond", response_model=AgentResponse)
 def respond(request: AgentRequest):
-    response = run_task(request.role, request.message, request.instructions)
+    response = run_task(request.role, request.message, request.instructions, request.memories)
     status = "COMPLETED" if not response.startswith("[LLM_NOT_CONFIGURED]") else "WAITING_FOR_HUMAN"
     return AgentResponse(agent_id=request.agent_id, status=status, response=response)
 
