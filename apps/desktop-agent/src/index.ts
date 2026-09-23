@@ -30,7 +30,7 @@ async function execute(action:string,args:any){
   if(action==="device.terminal.execute"){
     const command=String(args.command??"").trim();
     if(!command) throw new Error("Command is required");
-    const [file,...argv]=command.split(/\\s+/);
+    const [file,...argv]=command.split(/\s+/);
     const result=await exec(file,argv,{cwd:WORKSPACE,timeout:30000,maxBuffer:1024*1024});
     return {stdout:result.stdout,stderr:result.stderr};
   }
