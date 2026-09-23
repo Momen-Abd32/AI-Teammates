@@ -17,6 +17,12 @@ export class ConversationService {
     return this.repo.create(companyId,employeeId,agentId,title?.trim() || "New conversation");
   }
   async list(companyId:string,employeeId:string){ return this.repo.list(companyId,employeeId); }
+  async context(id:string,companyId:string,employeeId:string,limit=12){
+    const conversation=await this.repo.findOwned(id,companyId,employeeId);
+    if(!conversation) throw new ForbiddenException("Conversation access denied");
+    return this.repo.messages(id,limit);
+  }
+
   async messages(id:string,companyId:string,employeeId:string,limit=30){
     const conversation=await this.repo.findOwned(id,companyId,employeeId);
     if(!conversation) throw new ForbiddenException("Conversation access denied");
