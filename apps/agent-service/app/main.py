@@ -1,12 +1,12 @@
 import os
 from fastapi import FastAPI
-from .models import AgentRequest, AgentResponse
+from .models import AgentRequest, AgentResponse, AgentPlanRequest, ToolPlan
 from .memory_policy import is_safe_work_memory
 from .collaboration import AgentTaskMessage, TaskResult, execute_task
 from .memory import rank_memories, WorkMemory
-from .runtime import run_task
+from .runtime import run_task, plan_tool
 
-app = FastAPI(title="AI Teammates Agent Service", version="0.9.0")
+app = FastAPI(title="AI Teammates Agent Service", version="0.10.0")
 
 @app.get("/health")
 def health():
@@ -17,6 +17,17 @@ def respond(request: AgentRequest):
     response = run_task(request.role, request.message, request.instructions, request.memories, request.conversationHistory)
     status = "COMPLETED" if not response.startswith("[LLM_NOT_CONFIGURED]") else "WAITING_FOR_HUMAN"
     return AgentResponse(agent_id=request.agent_id, status=status, response=response)
+
+@app.post("/v1/agents/plan", response_model=ToolPlan)
+def plan(request: AgentPlanRequest):
+    return plan_tool(
+        request.role,
+        request.message,
+        request.instructions,
+        request.availableTools,
+        request.memories,
+        request.conversationHistory,
+    )
 
 @app.post("/v1/memory/validate")
 def validate_memory(body: dict):
