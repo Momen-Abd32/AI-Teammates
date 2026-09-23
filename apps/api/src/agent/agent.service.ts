@@ -58,7 +58,7 @@ export class AgentService {
   }
 
 
-  async planTool(input:{agentId:string;employeeId:string;companyId:string;message:string;conversationId?:string}) {
+  async planTool(input:{agentId:string;employeeId:string;companyId:string;message:string;conversationId?:string;toolResults?:Array<{tool:string;result:unknown}>}) {
     const agent=await this.getAgent(input.agentId,input.companyId);
     if(agent.employeeId!==input.employeeId) throw new BadGatewayException("Agent does not belong to employee");
     this.permissions.assertWithPermissions(
@@ -75,20 +75,14 @@ export class AgentService {
       method:"POST",
       headers:{"content-type":"application/json"},
       body:JSON.stringify({
-        agent_id:agent.id,
-        employee_id:agent.employeeId,
-        company_id:input.companyId,
-        role:agent.role,
-        permissions:agent.permissions ?? [],
-        instructions:agent.systemInstructions ?? "",
+        agent_id:agent.id,employee_id:agent.employeeId,company_id:input.companyId,
+        role:agent.role,permissions:agent.permissions ?? [],instructions:agent.systemInstructions ?? "",
         message:input.message,
         memories:memories.map(memory=>({scope:memory.scope,content:memory.content,score:memory.score})),
         conversationHistory:history.map(item=>({sender:item.sender,content:item.content})),
+        toolResults:input.toolResults ?? [],
         availableTools:this.toolRegistry.list().map(tool=>({
-          name:tool.name,
-          description:tool.description,
-          permission:tool.permission,
-          requiresApproval:tool.requiresApproval,
+          name:tool.name,description:tool.description,permission:tool.permission,requiresApproval:tool.requiresApproval,
         })),
       }),
       signal:AbortSignal.timeout(20000),
@@ -100,22 +94,25 @@ export class AgentService {
     return plan;
   }
 
-
   async act(input:{agentId:string;employeeId:string;companyId:string;message:string;conversationId?:string}) {
-    const plan=await this.planTool(input);
-    if(plan.action!=="TOOL" || !plan.tool) {
-      return this.chat(input);
+    const results:Array<{tool:string;result:unknown}>=[];
+    const maxSteps=5;
+    for(let step=0;step<maxSteps;step++){
+      const plan=await this.planTool({...input,toolResults:results});
+      if(plan.action!=="TOOL" || !plan.tool){
+        if(results.length) return {status:"COMPLETED",steps:results.length,results};
+        return this.chat(input);
+      }
+      const tool=this.toolRegistry.get(plan.tool);
+      if(!tool) throw new BadGatewayException("Planner selected an unavailable tool");
+      const execution=await this.toolExecutions.request({
+        companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId,
+        name:tool.name,arguments:plan.arguments ?? {},reason:plan.reason || "Agent requested tool execution",
+      });
+      if(execution.status==="WAITING_FOR_HUMAN") return {status:"WAITING_FOR_HUMAN",step:step+1,results,execution:execution.execution,approval:execution.approval};
+      results.push({tool:tool.name,result:execution.result});
     }
-    const tool=this.toolRegistry.get(plan.tool);
-    if(!tool) throw new BadGatewayException("Planner selected an unavailable tool");
-    return this.toolExecutions.request({
-      companyId:input.companyId,
-      employeeId:input.employeeId,
-      agentId:input.agentId,
-      name:tool.name,
-      arguments:plan.arguments ?? {},
-      reason:plan.reason || "Agent requested tool execution",
-    });
+    return {status:"STEP_LIMIT_REACHED",steps:results.length,results,message:"Agent stopped after the maximum tool steps."};
   }
 
   async chat(input:{agentId:string;employeeId:string;companyId:string;conversationId?:string;role?:string;message:string}) {
