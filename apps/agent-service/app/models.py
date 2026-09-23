@@ -36,6 +36,7 @@ class AgentPlanRequest(AgentContext):
     memories: list[MemoryContext] = Field(default_factory=list)
     conversationHistory: list[ConversationMessage] = Field(default_factory=list)
     availableTools: list[dict[str, object]] = Field(default_factory=list)
+    toolResults: list[dict[str, object]] = Field(default_factory=list)
 
 class AgentResponse(BaseModel):
     agent_id: str
