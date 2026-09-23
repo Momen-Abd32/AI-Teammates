@@ -46,6 +46,17 @@ export class ApprovalService {
     return r.rows;
   }
 
+  async find(id:string,companyId:string) {
+    const r=await this.db.query(
+      `SELECT id,company_id AS "companyId",agent_id AS "agentId",task_id AS "taskId",execution_id AS "executionId",
+              action,reason,status,decided_by AS "decidedBy"
+       FROM approvals WHERE id=$1 AND company_id=$2`,
+      [id,companyId],
+    );
+    if(!r.rows[0]) throw new NotFoundException("Approval not found");
+    return r.rows[0] as Approval;
+  }
+
   async decide(id:string,decidedBy:string,status:"APPROVED"|"REJECTED",companyId?:string) {
     const r=await this.db.query(
       `UPDATE approvals SET status=$1,decided_by=$2,decided_at=now()
