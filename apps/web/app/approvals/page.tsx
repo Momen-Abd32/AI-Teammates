@@ -21,8 +21,7 @@ export default function Approvals(){
  async function decide(id:string,status:"APPROVED"|"REJECTED"){
   const auth=await apiFetch("/auth/validate",{method:"POST"});
   if(!auth.ok)return;
-  const user=await auth.json();
-  const response=await apiFetch("/approvals/"+id,{method:"PATCH",body:JSON.stringify({decidedBy:user.employeeId,status})});
+  const response=await apiFetch("/approvals/"+id,{method:"PATCH",body:JSON.stringify({status})});
   if(response.ok)void load(); else setError("Failed to update approval");
  }
  return <main style={styles.page}>
