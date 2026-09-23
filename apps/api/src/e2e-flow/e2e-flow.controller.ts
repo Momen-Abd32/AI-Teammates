@@ -1,0 +1,1 @@
+import{Controller,Post}from"@nestjs/common";import{E2EFlowService}from"./e2e-flow.service";@Controller("e2e-flow")export class E2EFlowController{constructor(private flow:E2EFlowService){}@Post("bootstrap")bootstrap(){return this.flow.bootstrap()}}
