@@ -13,5 +13,6 @@ export class OrganizationController{
  @Post("agents") agent(@Body()b:{companyId:string;employeeId:string;role:string;systemInstructions?:string}){return this.org.createAgent(b);}
  @Post("my-agents") myAgents(@Body()b:{role:string;systemInstructions?:string},@CurrentUser()user:any){return this.org.createAgent({companyId:user.companyId,employeeId:user.employeeId,role:b.role,systemInstructions:b.systemInstructions});}
  @Get("companies/:companyId/employees") employees(@Param("companyId")id:string){return this.org.employees(id);}
- @Get("companies/:companyId/agents") agents(@Param("companyId")id:string){return this.org.agents(id);}
+ @Get("companies/:companyId/agents") @Roles("admin") agents(@Param("companyId")id:string){return this.org.agents(id);}
+ @Get("my-agents") myAgentList(@CurrentUser()user:any){return this.org.agentsForEmployee(user.companyId,user.employeeId);}
 }
