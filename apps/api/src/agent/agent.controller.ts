@@ -18,15 +18,16 @@ export class AgentController {
   }
 
   @Post("act")
-  act(@Body() body:{agentId:string;message:string},@CurrentUser() user:any) {
-    return this.agentService.act({agentId:body.agentId,message:body.message,employeeId:user.employeeId,companyId:user.companyId});
+  act(@Body() body:{agentId:string;message:string;conversationId?:string},@CurrentUser() user:any) {
+    return this.agentService.act({agentId:body.agentId,message:body.message,conversationId:body.conversationId,employeeId:user.employeeId,companyId:user.companyId});
   }
 
   @Post("plan")
-  plan(@Body() body:{agentId:string;message:string},@CurrentUser() user:any) {
+  plan(@Body() body:{agentId:string;message:string;conversationId?:string},@CurrentUser() user:any) {
     return this.agentService.planTool({
       agentId:body.agentId,
       message:body.message,
+      conversationId:body.conversationId,
       employeeId:user.employeeId,
       companyId:user.companyId,
     });
