@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  repository-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install TypeScript dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build TypeScript apps
+        run: pnpm --filter @ai-teammates/api build
+
+      - name: Python syntax check
+        run: python -m compileall apps/agent-service/app
