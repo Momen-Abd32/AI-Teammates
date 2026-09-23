@@ -1,10 +1,1 @@
-import {Injectable,NotFoundException} from "@nestjs/common";
-import {randomUUID} from "crypto";
-export type Approval={id:string;companyId:string;agentId:string;taskId?:string;action:string;reason:string;status:"PENDING"|"APPROVED"|"REJECTED";decidedBy?:string};
-@Injectable()
-export class ApprovalService{
- private readonly rows=new Map<string,Approval>();
- request(input:Omit<Approval,"id"|"status">){const x={...input,id:randomUUID(),status:"PENDING" as const};this.rows.set(x.id,x);return x;}
- list(companyId:string){return [...this.rows.values()].filter(x=>x.companyId===companyId);}
- decide(id:string,decidedBy:string,status:"APPROVED"|"REJECTED"){const x=this.rows.get(id);if(!x)throw new NotFoundException("Approval not found");x.status=status;x.decidedBy=decidedBy;return x;}
-}
+import{Injectable,NotFoundException}from"@nestjs/common";import{randomUUID}from"crypto";export type Approval={id:string;companyId:string;agentId:string;taskId?:string;action:string;reason:string;status:"PENDING"|"APPROVED"|"REJECTED";decidedBy?:string};@Injectable()export class ApprovalService{private rows=new Map<string,Approval>();request(input:Omit<Approval,"id"|"status">){const x={...input,id:randomUUID(),status:"PENDING" as const};this.rows.set(x.id,x);return x}list(companyId:string){return[...this.rows.values()].filter(x=>x.companyId===companyId)}decide(id:string,decidedBy:string,status:"APPROVED"|"REJECTED"){const x=this.rows.get(id);if(!x)throw new NotFoundException("Approval not found");x.status=status;x.decidedBy=decidedBy;return x}}
