@@ -5,7 +5,7 @@ import { ActivityEventService } from "../activity/activity.event.service";
 import { OrganizationService } from "../organization/organization.service";
 
 export type Approval = {
-  id:string; companyId:string; agentId:string; taskId?:string;
+  id:string; companyId:string; agentId:string; taskId?:string; executionId?:string;
   action:string; reason:string; status:"PENDING"|"APPROVED"|"REJECTED"; decidedBy?:string;
 };
 
@@ -16,10 +16,10 @@ export class ApprovalService {
   async request(input:Omit<Approval,"id"|"status">) {
     const id=randomUUID();
     const r=await this.db.query(
-      `INSERT INTO approvals(id,company_id,agent_id,task_id,action,reason,status)
-       VALUES($1,$2,$3,$4,$5,$6,'PENDING')
-       RETURNING id,company_id AS "companyId",agent_id AS "agentId",task_id AS "taskId",action,reason,status,decided_by AS "decidedBy"`,
-      [id,input.companyId,input.agentId,input.taskId ?? null,input.action,input.reason],
+      `INSERT INTO approvals(id,company_id,agent_id,task_id,execution_id,action,reason,status)
+       VALUES($1,$2,$3,$4,$5,$6,$7,'PENDING')
+       RETURNING id,company_id AS "companyId",agent_id AS "agentId",task_id AS "taskId",execution_id AS "executionId",action,reason,status,decided_by AS "decidedBy"`,
+      [id,input.companyId,input.agentId,input.taskId ?? null,input.executionId ?? null,input.action,input.reason],
     );
     const approval=r.rows[0];
     const agents=await this.org.agents(approval.companyId);
