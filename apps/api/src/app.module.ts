@@ -10,6 +10,7 @@ import {AuditModule} from "./audit/audit.module";
 import {TenantModule} from "./tenancy/tenant.module";
 import {AuthModule} from "./auth/auth.module";
 import {CollaborationModule} from "./collaboration/collaboration.module";
+import {MessageModule} from "./collaboration/message.module";
 import {RepositoryModule} from "./repositories/repository.module";
 import {InfrastructureModule} from "./infrastructure/infrastructure.module";
 import {SandboxModule} from "./sandbox/sandbox.module";
@@ -20,7 +21,7 @@ import {E2EFlowModule} from "./e2e-flow/e2e-flow.module";
 
 @Module({
  imports:[InfrastructureModule,SecurityModule,AuditModule,TenantModule,AuthModule,RepositoryModule,
- AgentModule,MemoryModule,TaskModule,TaskDependencyModule,ApprovalModule,CollaborationModule,
+ AgentModule,MemoryModule,TaskModule,TaskDependencyModule,ApprovalModule,CollaborationModule,MessageModule,
  SandboxModule,OrganizationModule,DepartmentModule,ProjectModule,E2EFlowModule],
  controllers:[HealthController]
 })
