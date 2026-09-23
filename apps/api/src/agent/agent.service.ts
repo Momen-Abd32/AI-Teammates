@@ -2,6 +2,16 @@ import { Injectable, BadGatewayException } from "@nestjs/common";
 
 @Injectable()
 export class AgentService {
+  getDemoAgent() {
+    return {
+      id: "agent-demo",
+      employeeId: "employee-demo",
+      companyId: "company-demo",
+      role: "full_stack_developer",
+      permissions: ["project.read", "task.read", "memory.write"],
+    };
+  }
+
   async chat(input: {
     agentId: string;
     employeeId: string;
@@ -13,19 +23,10 @@ export class AgentService {
     const response = await fetch(baseUrl + "/v1/agents/respond", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        agent_id: input.agentId,
-        employee_id: input.employeeId,
-        company_id: input.companyId,
-        role: input.role ?? "software_engineer",
-        message: input.message,
-      }),
+      body: JSON.stringify(input),
     });
 
-    if (!response.ok) {
-      throw new BadGatewayException("Agent service request failed");
-    }
-
+    if (!response.ok) throw new BadGatewayException("Agent service request failed");
     return response.json();
   }
 }
