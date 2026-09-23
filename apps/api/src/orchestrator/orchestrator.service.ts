@@ -1,5 +1,4 @@
 import{ForbiddenException,Injectable}from"@nestjs/common";
-import{randomUUID}from"crypto";
 import{OrganizationService}from"../organization/organization.service";
 import{TaskService}from"../tasks/task.service";
 import{CollaborationService}from"../collaboration/collaboration.service";
@@ -14,7 +13,6 @@ export class OrchestratorService{
   if(!sender||!receiver)throw new ForbiddenException("Both agents must belong to the company");
   if(sender.id===receiver.id)throw new ForbiddenException("An agent cannot delegate to itself");
   const task=await this.tasks.create({
-   id:randomUUID(),
    companyId:input.companyId,
    title:input.title.trim(),
    description:input.description.trim(),
