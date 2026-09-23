@@ -104,12 +104,13 @@ export class AgentService {
     let step=Number(run.currentStep ?? 0);
 
     try {
-      for(;step<Number(run.maxSteps ?? 5);step++){
+      while(step<Number(run.maxSteps ?? 5)){
+        step += 1;
         const plan=await this.planTool({...input,toolResults:results});
         if(plan.action!=="TOOL" || !plan.tool){
           if(results.length){
             const final=await this.finalAnswer(input,results);
-            const status=step>=Number(run.maxSteps ?? 5) ? "STEP_LIMIT_REACHED" : "COMPLETED";
+            const status="COMPLETED";
             await this.runs.update(runId,{status,currentStep:step,results,completed:true});
             return {status,steps:results.length,results,response:final.response};
           }
@@ -132,7 +133,7 @@ export class AgentService {
             waitingExecutionId:execution.execution.id,waitingApprovalId:execution.approval.id,
           });
           return {
-            status:"WAITING_FOR_HUMAN",runId,step:step+1,results,
+            status:"WAITING_FOR_HUMAN",runId,step,results,
             execution:execution.execution,approval:execution.approval,
           };
         }
@@ -140,7 +141,7 @@ export class AgentService {
         results=[...results,{tool:tool.name,result:execution.result}];
         if(Buffer.byteLength(JSON.stringify(results),"utf8")>this.maxResultBytes)
           throw new BadGatewayException("Agent tool result state exceeds the 5 MB limit");
-        await this.runs.update(runId,{status:"RUNNING",currentStep:step+1,results,waitingExecutionId:null,waitingApprovalId:null});
+        await this.runs.update(runId,{status:"RUNNING",currentStep:step,results,waitingExecutionId:null,waitingApprovalId:null});
       }
 
       const final=await this.finalAnswer(input,results);
@@ -157,13 +158,15 @@ export class AgentService {
     }
   }
 
-  async resumeAfterApproval(executionId:string, approved:boolean, action:string, result:unknown, companyId:string, employeeId:string) {
+  async resumeAfterApproval(executionId:string, approvalId:string, approved:boolean, action:string, result:unknown, companyId:string, employeeId:string) {
     const run=await this.runs.findWaitingByExecution(executionId);
     if(!run) return null;
     if(run.companyId!==companyId || run.employeeId!==employeeId)
       throw new BadGatewayException("Agent run does not belong to employee");
 
-    const existing=Array.isArray(run.results) ? run.results as AgentRunResult[] : [];
+    const claimed=await this.runs.claimWaiting(run.id,executionId,approvalId);
+    if(!claimed) return null;
+    const existing=Array.isArray(claimed.results) ? claimed.results as AgentRunResult[] : [];
     const executionResult=approved
       ? result
       : {status:"REJECTED",reason:"Human rejected the requested action"};
@@ -174,21 +177,19 @@ export class AgentService {
 
     if(!approved){
       const input:ActInput={
-        agentId:run.agentId,employeeId:run.employeeId,companyId:run.companyId,
-        conversationId:run.conversationId ?? undefined,message:run.message,
+        agentId:claimed.agentId,employeeId:claimed.employeeId,companyId:claimed.companyId,
+        conversationId:claimed.conversationId ?? undefined,message:claimed.message,
       };
       const final=await this.finalAnswer(input,updated);
-      await this.runs.update(run.id,{
-        status:"REJECTED",currentStep:run.currentStep,results:updated,
+      await this.runs.update(claimed.id,{
+        status:"REJECTED",currentStep:claimed.currentStep,results:updated,
         waitingExecutionId:null,waitingApprovalId:null,completed:true,
       });
       return {status:"REJECTED",runId:run.id,results:updated,response:final.response};
     }
 
-    await this.runs.update(run.id,{
-      status:"RUNNING",results:updated,waitingExecutionId:null,waitingApprovalId:null,
-    });
-    return this.runLoop(run.id);
+    await this.runs.update(claimed.id,{status:"RUNNING",results:updated,waitingExecutionId:null,waitingApprovalId:null});
+    return this.runLoop(claimed.id);
   }
 
   private async finalAnswer(input:ActInput, results:Array<{tool:string;result:unknown}>) {
