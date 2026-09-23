@@ -6,6 +6,7 @@ import { MemoryService } from "../memory/memory.service";
 import { MemoryLearningService } from "../memory/memory-learning.service";
 import { ConversationService } from "../conversations/conversation.service";
 import { ActivityEventService } from "../activity/activity.event.service";
+import { ToolRegistry } from "../tools/tool.registry";
 
 @Injectable()
 export class AgentService {
@@ -19,6 +20,7 @@ export class AgentService {
     private learning:MemoryLearningService,
     private conversations:ConversationService,
     private activity:ActivityEventService,
+    private toolRegistry:ToolRegistry,
   ) {}
 
   async getAgent(agentId:string, companyId:string) {
@@ -51,6 +53,46 @@ export class AgentService {
       // Learning must never make an otherwise successful chat fail.
       this.logger.warn("Automatic memory learning skipped", error instanceof Error ? error.message : String(error));
     }
+  }
+
+
+  async planTool(input:{agentId:string;employeeId:string;companyId:string;message:string}) {
+    const agent=await this.getAgent(input.agentId,input.companyId);
+    if(agent.employeeId!==input.employeeId) throw new BadGatewayException("Agent does not belong to employee");
+    this.permissions.assertWithPermissions(
+      {companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId},
+      "agent.chat",
+      agent.permissions,
+    );
+    const memories=await this.memory.semanticSearch(input.companyId,input.employeeId,input.agentId,input.message,8);
+    const baseUrl=process.env.AGENT_SERVICE_URL ?? "http://localhost:8000";
+    const response=await fetch(baseUrl+"/v1/agents/plan",{
+      method:"POST",
+      headers:{"content-type":"application/json"},
+      body:JSON.stringify({
+        agent_id:agent.id,
+        employee_id:agent.employeeId,
+        company_id:input.companyId,
+        role:agent.role,
+        permissions:agent.permissions ?? [],
+        instructions:agent.systemInstructions ?? "",
+        message:input.message,
+        memories:memories.map(memory=>({scope:memory.scope,content:memory.content,score:memory.score})),
+        conversationHistory:[],
+        availableTools:this.toolRegistry.list().map(tool=>({
+          name:tool.name,
+          description:tool.description,
+          permission:tool.permission,
+          requiresApproval:tool.requiresApproval,
+        })),
+      }),
+      signal:AbortSignal.timeout(20000),
+    });
+    if(!response.ok) throw new BadGatewayException("Agent planner request failed");
+    const plan=await response.json() as {action:string;tool?:string|null;reason?:string;arguments?:Record<string,unknown>};
+    if(plan.action==="TOOL" && !plan.tool) return {action:"NONE",reason:"Planner did not select a tool"};
+    if(plan.action==="TOOL" && !this.toolRegistry.get(String(plan.tool))) return {action:"NONE",reason:"Planner selected an unavailable tool"};
+    return plan;
   }
 
   async chat(input:{agentId:string;employeeId:string;companyId:string;conversationId?:string;role?:string;message:string}) {
