@@ -38,7 +38,7 @@ export class ApprovalService {
 
   async list(companyId:string) {
     const r=await this.db.query(
-      `SELECT id,company_id AS "companyId",agent_id AS "agentId",task_id AS "taskId",
+      `SELECT id,company_id AS "companyId",agent_id AS "agentId",task_id AS "taskId",execution_id AS "executionId",
               action,reason,status,decided_by AS "decidedBy"
        FROM approvals WHERE company_id=$1 ORDER BY created_at DESC`,
       [companyId],
