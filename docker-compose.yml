@@ -26,6 +26,12 @@ services:
       REDIS_RESPONSE_STREAM: agent:responses
       REDIS_GROUP: agent-runtime
     depends_on: [redis,agent-service]
+  sandbox-worker:
+    build: ./apps/sandbox-worker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports: ["8010:8010"]
+
   api:
     build: ./apps/api
     environment:
@@ -33,7 +39,8 @@ services:
       REDIS_URL: redis://redis:6379
       AGENT_SERVICE_URL: http://agent-service:8000
       AUTH_SECRET: ${AUTH_SECRET:-change-me-in-production}
-    depends_on: [postgres,redis,agent-service,agent-worker]
+      SANDBOX_WORKER_URL: http://sandbox-worker:8010
+    depends_on: [postgres,redis,agent-service,agent-worker,sandbox-worker]
     ports: ["3001:3001"]
   web:
     build: ./apps/web
