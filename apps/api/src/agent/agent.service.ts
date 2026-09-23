@@ -76,7 +76,12 @@ export class AgentService {
       const created=await this.conversations.create(input.companyId,input.employeeId,input.agentId);
       conversationId=created.id;
     }
-    await this.conversations.addMessage(conversationId,input.companyId,input.employeeId,"USER",input.message);\n    const existingMessages=await this.conversations.context(conversationId,input.companyId,input.employeeId,2);\n    if(existingMessages.length===1 && existingMessages[0].sender==="USER"){\n      const title=input.message.trim().replace(/\\s+/g," ").slice(0,60);\n      await this.conversations.updateTitle(conversationId,input.companyId,input.employeeId,title || "New conversation");\n    }
+    await this.conversations.addMessage(conversationId,input.companyId,input.employeeId,"USER",input.message);
+    const existingMessages=await this.conversations.context(conversationId,input.companyId,input.employeeId,2);
+    if(existingMessages.length===1 && existingMessages[0].sender==="USER"){
+      const title=input.message.trim().replace(/\s+/g," ").slice(0,60);
+      await this.conversations.updateTitle(conversationId,input.companyId,input.employeeId,title || "New conversation");
+    }
     const history=await this.conversations.context(conversationId,input.companyId,input.employeeId,12);
 
     const memories = await this.memory.semanticSearch(
