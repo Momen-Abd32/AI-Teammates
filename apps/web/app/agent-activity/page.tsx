@@ -58,6 +58,8 @@ function label(type:string){
   "tool.completed":"Tool completed",
   "agent.delegated":"Task delegated",
   "approval.required":"Human approval required",
+  "approval.approved":"Approval approved",
+  "approval.rejected":"Approval rejected",
   "agent.completed":"Agent completed",
   "agent.failed":"Agent failed",
  };
