@@ -3,3 +3,4 @@ uvicorn[standard]==0.35.0
 pydantic==2.11.7
 crewai==0.157.0
 redis==6.4.0
+openai==1.107.0
