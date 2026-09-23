@@ -28,7 +28,7 @@ export class ConversationService {
     if(!conversation) throw new ForbiddenException("Conversation access denied");
     return this.repo.messages(id,limit);
   }
-  async addMessage(id:string,companyId:string,employeeId:string,sender:"USER"|"AGENT"|"SYSTEM",content:string){
+  async updateTitle(id:string,companyId:string,employeeId:string,title:string){\n    const conversation=await this.repo.findOwned(id,companyId,employeeId);\n    if(!conversation) throw new ForbiddenException("Conversation access denied");\n    const clean=title.trim().replace(/\\s+/g," ").slice(0,80);\n    if(!clean) throw new BadRequestException("Conversation title is required");\n    return this.repo.updateTitle(id,clean);\n  }\n\n  async addMessage(id:string,companyId:string,employeeId:string,sender:"USER"|"AGENT"|"SYSTEM",content:string){
     if(!content?.trim()) throw new BadRequestException("Message content is required");
     const conversation=await this.repo.findOwned(id,companyId,employeeId);
     if(!conversation) throw new ForbiddenException("Conversation access denied");
