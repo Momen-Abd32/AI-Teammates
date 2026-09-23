@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS tool_executions_company_idx ON tool_executions(company_id,created_at DESC);
