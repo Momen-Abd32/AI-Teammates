@@ -4,9 +4,11 @@ import { SecurityModule } from "./security/security.module";
 import { HealthController } from "./health.controller";
 import { MemoryModule } from "./memory/memory.module";
 import { TaskModule } from "./tasks/task.module";
+import { ApprovalModule } from "./approvals/approval.module";
+import { AuditModule } from "./audit/audit.module";
 
 @Module({
-  imports: [SecurityModule, AgentModule, MemoryModule, TaskModule],
+  imports: [SecurityModule, AuditModule, AgentModule, MemoryModule, TaskModule, ApprovalModule],
   controllers: [HealthController],
 })
 export class AppModule {}
