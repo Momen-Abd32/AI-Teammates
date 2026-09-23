@@ -2,7 +2,7 @@
 import {useEffect,useState} from "react";
 import {apiFetch} from "../../lib/auth";
 
-type Approval={id:string;action:string;reason:string;status:"PENDING"|"APPROVED"|"REJECTED";agentId:string;};
+type Approval={id:string;action:string;reason:string;status:"PENDING"|"APPROVED"|"REJECTED";agentId:string;executionId?:string;};
 
 export default function Approvals(){
  const [items,setItems]=useState<Approval[]>([]);
@@ -19,9 +19,11 @@ export default function Approvals(){
  }
  useEffect(()=>{void load();},[]);
  async function decide(id:string,status:"APPROVED"|"REJECTED"){
-  const auth=await apiFetch("/auth/validate",{method:"POST"});
-  if(!auth.ok)return;
-  const response=await apiFetch("/approvals/"+id,{method:"PATCH",body:JSON.stringify({status})});
+  const item=items.find(x=>x.id===id);
+  const endpoint=item?.executionId
+   ? `/tools/${status==="APPROVED"?"approve":"reject"}/${item.executionId}/${id}`
+   : "/approvals/"+id;
+  const response=await apiFetch(endpoint,{method:item?.executionId?"POST":"PATCH",body:item?.executionId?undefined:JSON.stringify({status})});
   if(response.ok)void load(); else setError("Failed to update approval");
  }
  return <main style={styles.page}>
