@@ -1,21 +1,11 @@
-import { ForbiddenException, Injectable } from "@nestjs/common";
-import { MessageBusService, AgentTaskMessage } from "./message-bus.service";
-
+import {ForbiddenException,Injectable} from "@nestjs/common";
+import {MessageBusService,AgentTaskMessage} from "./message-bus.service";
 @Injectable()
-export class CollaborationService {
-  constructor(private readonly bus: MessageBusService) {}
-
-  requestTask(input: AgentTaskMessage) {
-    if (input.senderAgentId === input.receiverAgentId) {
-      throw new ForbiddenException("An agent cannot delegate a task to itself");
-    }
-    if (!input.companyId || !input.taskId) {
-      throw new ForbiddenException("Company and task context are required");
-    }
-    return this.bus.publish({ ...input, type: "TASK_REQUEST" });
-  }
-
-  getInbox(companyId: string, agentId: string) {
-    return this.bus.consume(companyId, agentId);
-  }
+export class CollaborationService{
+ constructor(private readonly bus:MessageBusService){}
+ requestTask(input:AgentTaskMessage){
+  if(input.senderAgentId===input.receiverAgentId)throw new ForbiddenException("An agent cannot delegate to itself");
+  if(!input.companyId||!input.taskId)throw new ForbiddenException("Company and task context are required");
+  return this.bus.publish({...input,type:"TASK_REQUEST"});
+ }
 }
