@@ -2,7 +2,7 @@ import {Injectable,UnauthorizedException} from "@nestjs/common";
 import {createHmac,randomBytes,scryptSync,timingSafeEqual} from "crypto";
 import {DatabaseService} from "../infrastructure/database.service";
 
-type Session={companyId:string;employeeId:string;expiresAt:number};
+type Session={companyId:string;employeeId:string;role:string;expiresAt:number};
 const TTL=60*60*8;
 
 @Injectable()
@@ -47,7 +47,7 @@ export class AuthService {
          RETURNING id`,
         [companyId,input.name,input.email,passwordHash],
       );
-      return this.issue(companyId,employee.rows[0].id);
+      return this.issue(companyId,employee.rows[0].id,"admin");
     });
   }
 
@@ -62,12 +62,12 @@ export class AuthService {
        RETURNING id,company_id AS "companyId",name,email,role`,
       [input.companyId,input.name,input.email,input.role??"employee",passwordHash],
     );
-    return this.issue(r.rows[0].companyId,r.rows[0].id);
+    return this.issue(r.rows[0].companyId,r.rows[0].id,r.rows[0].role);
   }
 
   async login(email:string,password:string){
     const r=await this.db.query(
-      `SELECT id,company_id AS "companyId",password_hash AS "passwordHash" FROM employees WHERE lower(email)=lower($1)`,
+      `SELECT id,company_id AS "companyId",role,password_hash AS "passwordHash" FROM employees WHERE lower(email)=lower($1)`,
       [email],
     );
     const employee=r.rows[0];
@@ -76,12 +76,12 @@ export class AuthService {
     const derived=scryptSync(password,salt,64);
     const expected=Buffer.from(stored,"hex");
     if(expected.length!==derived.length || !timingSafeEqual(expected,derived)) throw new UnauthorizedException("Invalid email or password");
-    return this.issue(employee.companyId,employee.id);
+    return this.issue(employee.companyId,employee.id,employee.role);
   }
 
-  issue(companyId:string,employeeId:string){
-    const payload={companyId,employeeId,expiresAt:Date.now()+TTL*1000};
-    return {accessToken:this.sign(payload),companyId,employeeId,expiresIn:TTL};
+  issue(companyId:string,employeeId:string,role="employee"){
+    const payload={companyId,employeeId,role,expiresAt:Date.now()+TTL*1000};
+    return {accessToken:this.sign(payload),companyId,employeeId,role,expiresIn:TTL};
   }
 
   validate(token:string){return this.verify(token);}
