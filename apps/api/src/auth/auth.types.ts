@@ -1,0 +1,1 @@
+export type AuthenticatedUser={companyId:string;employeeId:string;expiresAt:number};
