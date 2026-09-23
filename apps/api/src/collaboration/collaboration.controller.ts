@@ -1,8 +1,1 @@
-import {Body,Controller,Post} from "@nestjs/common";
-import {CollaborationService} from "./collaboration.service";
-import {AgentTaskMessage} from "./message-bus.service";
-@Controller("collaboration")
-export class CollaborationController{
- constructor(private readonly collaboration:CollaborationService){}
- @Post("tasks") requestTask(@Body() body:AgentTaskMessage){return this.collaboration.requestTask(body);}
-}
+import{Body,Controller,Get,Param,Post}from"@nestjs/common";import{CollaborationService}from"./collaboration.service";import{RedisService}from"../infrastructure/redis.service";import{AgentTaskMessage}from"./message-bus.service";@Controller("collaboration")export class CollaborationController{constructor(private collaboration:CollaborationService,private redis:RedisService){}@Post("tasks")request(@Body()body:AgentTaskMessage){return this.collaboration.requestTask(body)}@Get("tasks/:taskId/results")async results(@Param("taskId")taskId:string){return this.redis.readMatching("agent:responses",taskId)}}
