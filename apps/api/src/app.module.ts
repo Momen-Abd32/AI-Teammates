@@ -23,12 +23,13 @@ import {RolesGuard} from "./auth/roles.guard";
 import {ToolModule} from "./tools/tool.module";
 import {ConversationModule} from "./conversations/conversation.module";
 import {ActivityModule} from "./activity/activity.module";
+import {OrchestratorModule} from "./orchestrator/orchestrator.module";
 import {APP_GUARD} from "@nestjs/core";
 
 @Module({
  imports:[InfrastructureModule,SecurityModule,AuditModule,TenantModule,AuthModule,RepositoryModule,
  AgentModule,MemoryModule,TaskModule,TaskDependencyModule,ApprovalModule,CollaborationModule,MessageModule,
- SandboxModule,OrganizationModule,DepartmentModule,ProjectModule,E2EFlowModule,ToolModule,ConversationModule,ActivityModule],
+ SandboxModule,OrganizationModule,DepartmentModule,ProjectModule,E2EFlowModule,ToolModule,ConversationModule,ActivityModule,OrchestratorModule],
  controllers:[HealthController],providers:[{provide:APP_GUARD,useClass:AuthGuard},{provide:APP_GUARD,useClass:RolesGuard}]
 })
 export class AppModule {}
