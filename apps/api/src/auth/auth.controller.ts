@@ -5,6 +5,11 @@ import{AuthService}from "./auth.service";
 export class AuthController{
  constructor(private auth:AuthService){}
 
+ @Post("register-company")
+ registerCompany(@Body() b:{companyName:string;name:string;email:string;password:string}){
+   return this.auth.registerCompany(b);
+ }
+
  @Post("register")
  register(@Body() b:{companyId:string;name:string;email:string;password:string;role?:string}){
    return this.auth.register(b);
