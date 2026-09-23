@@ -3,7 +3,11 @@ from pydantic import BaseModel, Field
 
 MemoryScope = Literal["PRIVATE", "PROJECT", "TEAM", "COMPANY"]
 
-class ConversationMessage(BaseModel):\n    sender: Literal["USER", "AGENT", "SYSTEM"]\n    content: str = Field(min_length=1, max_length=20000)\n\nclass MemoryContext(BaseModel):
+class ConversationMessage(BaseModel):
+    sender: Literal["USER", "AGENT", "SYSTEM"]
+    content: str = Field(min_length=1, max_length=20000)
+
+class MemoryContext(BaseModel):
     scope: MemoryScope
     content: str = Field(min_length=1, max_length=12000)
     score: float | None = None
@@ -18,7 +22,20 @@ class AgentContext(BaseModel):
 
 class AgentRequest(AgentContext):
     message: str = Field(min_length=1, max_length=20000)
-    memories: list[MemoryContext] = Field(default_factory=list)\n    conversationHistory: list[ConversationMessage] = Field(default_factory=list)
+    memories: list[MemoryContext] = Field(default_factory=list)
+    conversationHistory: list[ConversationMessage] = Field(default_factory=list)
+
+class ToolPlan(BaseModel):
+    action: Literal["NONE", "TOOL"]
+    tool: str | None = None
+    reason: str = ""
+    arguments: dict[str, object] = Field(default_factory=dict)
+
+class AgentPlanRequest(AgentContext):
+    message: str = Field(min_length=1, max_length=20000)
+    memories: list[MemoryContext] = Field(default_factory=list)
+    conversationHistory: list[ConversationMessage] = Field(default_factory=list)
+    availableTools: list[dict[str, object]] = Field(default_factory=list)
 
 class AgentResponse(BaseModel):
     agent_id: str
