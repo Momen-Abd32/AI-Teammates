@@ -7,9 +7,10 @@ import { OrganizationModule } from "../organization/organization.module";
 import { MemoryModule } from "../memory/memory.module";
 import { ConversationModule } from "../conversations/conversation.module";
 import { ActivityModule } from "../activity/activity.module";
+import { ToolModule } from "../tools/tool.module";
 
 @Module({
-  imports:[SecurityModule,AuditModule,OrganizationModule,MemoryModule,ConversationModule,ActivityModule],
+  imports:[SecurityModule,AuditModule,OrganizationModule,MemoryModule,ConversationModule,ActivityModule,ToolModule],
   controllers:[AgentController],
   providers:[AgentService],
 })
