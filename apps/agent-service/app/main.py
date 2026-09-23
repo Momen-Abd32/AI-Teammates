@@ -27,6 +27,7 @@ def plan(request: AgentPlanRequest):
         request.availableTools,
         request.memories,
         request.conversationHistory,
+        request.toolResults,
     )
 
 @app.post("/v1/memory/validate")
