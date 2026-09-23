@@ -7,6 +7,7 @@ import { MemoryLearningService } from "../memory/memory-learning.service";
 import { ConversationService } from "../conversations/conversation.service";
 import { ActivityEventService } from "../activity/activity.event.service";
 import { ToolRegistry } from "../tools/tool.registry";
+import { ToolExecutionService } from "../tools/tool-execution.service";
 
 @Injectable()
 export class AgentService {
@@ -21,6 +22,7 @@ export class AgentService {
     private conversations:ConversationService,
     private activity:ActivityEventService,
     private toolRegistry:ToolRegistry,
+    private toolExecutions:ToolExecutionService,
   ) {}
 
   async getAgent(agentId:string, companyId:string) {
@@ -93,6 +95,24 @@ export class AgentService {
     if(plan.action==="TOOL" && !plan.tool) return {action:"NONE",reason:"Planner did not select a tool"};
     if(plan.action==="TOOL" && !this.toolRegistry.get(String(plan.tool))) return {action:"NONE",reason:"Planner selected an unavailable tool"};
     return plan;
+  }
+
+
+  async act(input:{agentId:string;employeeId:string;companyId:string;message:string}) {
+    const plan=await this.planTool(input);
+    if(plan.action!=="TOOL" || !plan.tool) {
+      return this.chat(input);
+    }
+    const tool=this.toolRegistry.get(plan.tool);
+    if(!tool) throw new BadGatewayException("Planner selected an unavailable tool");
+    return this.toolExecutions.request({
+      companyId:input.companyId,
+      employeeId:input.employeeId,
+      agentId:input.agentId,
+      name:tool.name,
+      arguments:plan.arguments ?? {},
+      reason:plan.reason || "Agent requested tool execution",
+    });
   }
 
   async chat(input:{agentId:string;employeeId:string;companyId:string;conversationId?:string;role?:string;message:string}) {
