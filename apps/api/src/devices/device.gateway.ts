@@ -22,6 +22,18 @@ export class DeviceGateway {
     await this.repo.heartbeat(device.id);
     this.sockets.set(device.id,socket);
     socket.send(JSON.stringify({type:"DEVICE_CONNECTED",deviceId:device.id}));
+
+    socket.on("message",async raw=>{
+      try{
+        const body=JSON.parse(String(raw)) as {type?:string;commandId?:string;status?:"COMPLETED"|"FAILED"|"REJECTED";result?:unknown};
+        if(body.type!=="device.result" || !body.commandId || !body.status) return;
+        const command=await this.repo.commandForDevice(body.commandId,device.id);
+        if(!command) return;
+        await this.repo.completeCommand(body.commandId,body.status,body.result);
+      }catch(error){
+        this.logger.warn("Invalid device message",error instanceof Error?error.message:String(error));
+      }
+    });
     socket.on("close",()=>this.sockets.delete(device.id));
   }
 
@@ -30,12 +42,6 @@ export class DeviceGateway {
     if(!socket || socket.readyState!==1) throw new Error("Device is offline");
     await this.repo.startCommand(command.id);
     socket.send(JSON.stringify({type:"DEVICE_COMMAND",command:{id:command.id,action:command.action,arguments:command.arguments}}));
-  }
-
-  async handleResult(deviceId:string,body:{commandId:string;status:"COMPLETED"|"FAILED"|"REJECTED";result:unknown}) {
-    const commandRows=await this.repo.command(body.commandId, "");
-    if(!commandRows || commandRows.deviceId!==deviceId) throw new Error("Command does not belong to device");
-    await this.repo.completeCommand(body.commandId,body.status,body.result);
   }
 
   disconnect(deviceId:string){this.sockets.get(deviceId)?.close(4000,"Device revoked");}
