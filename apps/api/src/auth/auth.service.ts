@@ -1,8 +1,1 @@
-import {Injectable} from "@nestjs/common";
-import {randomUUID} from "crypto";
-@Injectable()
-export class AuthService{
- issueDemoSession(companyId:string,employeeId:string){
-  return {accessToken:randomUUID(),companyId,employeeId,expiresIn:3600};
- }
-}
+import{Injectable,UnauthorizedException}from"@nestjs/common";import{randomUUID}from"crypto";@Injectable()export class AuthService{private sessions=new Map<string,{companyId:string;employeeId:string;expiresAt:number}>();issueDemoSession(companyId:string,employeeId:string){const accessToken=randomUUID();this.sessions.set(accessToken,{companyId,employeeId,expiresAt:Date.now()+3600000});return{accessToken,companyId,employeeId,expiresIn:3600}}validate(token:string){const s=this.sessions.get(token);if(!s||s.expiresAt<Date.now()){this.sessions.delete(token);throw new UnauthorizedException("Invalid session")}return s}}
