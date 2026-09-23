@@ -22,7 +22,7 @@ export class ToolExecutionService{
    const approval=await this.approvals.request({
     companyId:input.companyId,agentId:input.agentId,taskId:input.taskId,executionId:execution.id,
     action:input.name,reason:input.reason??decision.reason,
-   });
+   },input.employeeId);
    await this.audit.record({companyId:input.companyId,agentId:input.agentId,action:"TOOL_APPROVAL_REQUESTED",resource:input.name,metadata:{executionId:execution.id,approvalId:approval.id}});
    return {status:"WAITING_FOR_HUMAN",execution,approval};
   }
