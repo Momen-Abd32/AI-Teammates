@@ -14,7 +14,7 @@ def health():
 
 @app.post("/v1/agents/respond", response_model=AgentResponse)
 def respond(request: AgentRequest):
-    response = run_task(request.role, request.message, request.instructions, request.memories)
+    response = run_task(request.role, request.message, request.instructions, request.memories, request.conversationHistory)
     status = "COMPLETED" if not response.startswith("[LLM_NOT_CONFIGURED]") else "WAITING_FOR_HUMAN"
     return AgentResponse(agent_id=request.agent_id, status=status, response=response)
 
