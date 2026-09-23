@@ -1,0 +1,1 @@
+import{Body,Controller,Post}from"@nestjs/common";import{SandboxService}from"./sandbox.service";@Controller("sandbox")export class SandboxController{constructor(private sandbox:SandboxService){}@Post("execute")execute(@Body()b:{agentId:string;language:string;code:string}){return this.sandbox.execute(b.agentId,b.language,b.code)}}
