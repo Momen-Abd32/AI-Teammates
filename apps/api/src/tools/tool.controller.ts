@@ -10,7 +10,6 @@ export class ToolController{
  @Post("request") request(@Body()b:{agentId:string;taskId?:string;name:string;resource?:string;arguments?:Record<string,unknown>;reason?:string},@CurrentUser()user:any){
   return this.executions.request({...b,companyId:user.companyId,employeeId:user.employeeId,arguments:b.arguments??{}});
  }
- @Post("approve/:executionId/:approvalId") approve(@Param("executionId")executionId:string,@Param("approvalId")approvalId:string,@CurrentUser()user:any){
-  return this.executions.approveAndExecute(executionId,approvalId,user.employeeId);
- }
+ @Post("approve/:executionId/:approvalId") approve(@Param("executionId")executionId:string,@Param("approvalId")approvalId:string,@CurrentUser()user:any){return this.executions.approveAndExecute(executionId,approvalId,user.employeeId);}
+ @Post("reject/:executionId/:approvalId") reject(@Param("executionId")executionId:string,@Param("approvalId")approvalId:string,@CurrentUser()user:any){return this.executions.reject(executionId,approvalId,user.employeeId);}
 }
