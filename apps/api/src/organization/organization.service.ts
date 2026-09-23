@@ -29,4 +29,5 @@ export class OrganizationService {
 
   employees(companyId:string) { return this.repo.employees(companyId); }
   agents(companyId:string) { return this.repo.agents(companyId); }
+  agentsForEmployee(companyId:string,employeeId:string) { return this.repo.agentsForEmployee(companyId,employeeId); }
 }
