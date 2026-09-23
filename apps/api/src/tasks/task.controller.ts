@@ -1,1 +1,12 @@
-import{Body,Controller,Get,Param,Patch,Post}from"@nestjs/common";import{TaskService}from"./task.service";import{TaskStatus}from"../domain";@Controller("tasks")export class TaskController{constructor(private tasks:TaskService){}@Get("company/:companyId")list(@Param("companyId")id:string){return this.tasks.list(id)}@Post()create(@Body()b:{companyId:string;title:string;description?:string;projectId?:string;assignedAgentId?:string}){return this.tasks.create({...b,description:b.description??""})}@Patch(":id/status")status(@Param("id")id:string,@Body()b:{status:TaskStatus}){return this.tasks.updateStatus(id,b.status)}}
+import{Body,Controller,Get,Param,Patch,Post}from"@nestjs/common";
+import{TaskService}from"./task.service";
+import{TaskStatus}from"../domain";
+import{CurrentUser}from"../auth/current-user.decorator";
+
+@Controller("tasks")
+export class TaskController{
+ constructor(private tasks:TaskService){}
+ @Get("company/:companyId")list(@Param("companyId")id:string){return this.tasks.list(id)}
+ @Post()create(@Body()b:{companyId:string;title:string;description?:string;projectId?:string;assignedAgentId?:string}){return this.tasks.create({...b,description:b.description??""})}
+ @Patch(":id/status")status(@Param("id")id:string,@Body()b:{status:TaskStatus},@CurrentUser()user:any){return this.tasks.updateStatus(id,b.status,user.companyId)}
+}
