@@ -157,7 +157,7 @@ export class AgentService {
     }
   }
 
-  async resumeAfterApproval(executionId:string, approved:boolean, result:unknown, companyId:string, employeeId:string) {
+  async resumeAfterApproval(executionId:string, approved:boolean, action:string, result:unknown, companyId:string, employeeId:string) {
     const run=await this.runs.findWaitingByExecution(executionId);
     if(!run) return null;
     if(run.companyId!==companyId || run.employeeId!==employeeId)
@@ -167,9 +167,7 @@ export class AgentService {
     const executionResult=approved
       ? result
       : {status:"REJECTED",reason:"Human rejected the requested action"};
-    const executionAction=approved
-      ? "approved tool result"
-      : "rejected tool result";
+    const executionAction=action || "approved tool";
     const updated=[...existing,{tool:executionAction,result:executionResult}];
     if(Buffer.byteLength(JSON.stringify(updated),"utf8")>this.maxResultBytes)
       throw new BadGatewayException("Agent tool result state exceeds the 5 MB limit");
