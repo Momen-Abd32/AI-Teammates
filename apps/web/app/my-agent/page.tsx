@@ -66,7 +66,7 @@ export default function MyAgent(){
     setInput("");setSending(true);setError("");
     setMessages(prev=>[...prev,{id:"local-"+Date.now(),sender:"USER",content:text,createdAt:new Date().toISOString()}]);
     const r=await apiFetch("/agents/act",{method:"POST",body:JSON.stringify({
-      agentId:activeAgent.id,message:text
+      agentId:activeAgent.id,conversationId:conversation.id,message:text
     })});
     if(!r.ok){setError("Agent request failed.");setSending(false);return;}
     const result=await r.json();
