@@ -17,7 +17,11 @@ export class ConversationRepository {
     const r=await this.db.query(`SELECT id,company_id AS "companyId",employee_id AS "employeeId",agent_id AS "agentId",title,created_at AS "createdAt",updated_at AS "updatedAt" FROM conversations WHERE id=$1 AND company_id=$2 AND employee_id=$3`,[id,companyId,employeeId]);
     return r.rows[0] ?? null;
   }
-  async updateTitle(conversationId:string,title:string) {\n    const r=await this.db.query(`UPDATE conversations SET title=$2,updated_at=now() WHERE id=$1 RETURNING id,company_id AS "companyId",employee_id AS "employeeId",agent_id AS "agentId",title,created_at AS "createdAt",updated_at AS "updatedAt"`,[conversationId,title]);\n    return r.rows[0] ?? null;\n  }\n\n  async addMessage(conversationId:string,sender:"USER"|"AGENT"|"SYSTEM",content:string) {
+  async updateTitle(conversationId:string,title:string) {
+    const r=await this.db.query(`UPDATE conversations SET title=$2,updated_at=now() WHERE id=$1 RETURNING id,company_id AS "companyId",employee_id AS "employeeId",agent_id AS "agentId",title,created_at AS "createdAt",updated_at AS "updatedAt"`,[conversationId,title]);\n    return r.rows[0] ?? null;
+  }
+
+  async addMessage(conversationId:string,sender:"USER"|"AGENT"|"SYSTEM",content:string) {
     const r=await this.db.query(`INSERT INTO conversation_messages(id,conversation_id,sender,content) VALUES(gen_random_uuid(),$1,$2,$3) RETURNING id,conversation_id AS "conversationId",sender,content,created_at AS "createdAt"`,[conversationId,sender,content]);
     await this.db.query("UPDATE conversations SET updated_at=now() WHERE id=$1",[conversationId]);
     return r.rows[0];
