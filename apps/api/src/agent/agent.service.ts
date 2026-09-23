@@ -2,6 +2,7 @@ import { BadGatewayException, Injectable } from "@nestjs/common";
 import { PermissionService } from "../security/permission.service";
 import { AuditService } from "../audit/audit.service";
 import { OrganizationService } from "../organization/organization.service";
+import { MemoryService } from "../memory/memory.service";
 
 @Injectable()
 export class AgentService {
@@ -9,6 +10,7 @@ export class AgentService {
     private permissions:PermissionService,
     private audit:AuditService,
     private org:OrganizationService,
+    private memory:MemoryService,
   ) {}
 
   async getAgent(agentId:string, companyId:string) {
@@ -18,17 +20,9 @@ export class AgentService {
     return agent;
   }
 
-  async chat(input:{
-    agentId:string;
-    employeeId:string;
-    companyId:string;
-    role?:string;
-    message:string;
-  }) {
+  async chat(input:{agentId:string;employeeId:string;companyId:string;role?:string;message:string}) {
     const agent = await this.getAgent(input.agentId,input.companyId);
-    if(agent.employeeId !== input.employeeId) {
-      throw new BadGatewayException("Agent does not belong to employee");
-    }
+    if(agent.employeeId !== input.employeeId) throw new BadGatewayException("Agent does not belong to employee");
 
     this.permissions.assertWithPermissions(
       {companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId},
@@ -36,13 +30,17 @@ export class AgentService {
       agent.permissions,
     );
 
-    this.audit.record({
-      companyId:input.companyId,
-      actorId:input.employeeId,
-      agentId:input.agentId,
-      action:"agent.chat",
-      resource:input.agentId,
-    });
+    this.audit.record({companyId:input.companyId,actorId:input.employeeId,agentId:input.agentId,action:"agent.chat",resource:input.agentId});
+
+    // Memory access stays in NestJS so tenant/agent authorization is enforced before
+    // any memory is sent to the Python runtime.
+    const memories = await this.memory.semanticSearch(
+      input.companyId,
+      input.employeeId,
+      input.agentId,
+      input.message,
+      8,
+    );
 
     const baseUrl = process.env.AGENT_SERVICE_URL ?? "http://localhost:8000";
     const response = await fetch(baseUrl + "/v1/agents/respond", {
@@ -53,12 +51,11 @@ export class AgentService {
         role:agent.role,
         permissions:agent.permissions ?? [],
         instructions:agent.systemInstructions ?? "",
+        memories:memories.map(memory => ({scope:memory.scope,content:memory.content,score:memory.score})),
       }),
     });
 
-    if(!response.ok) {
-      throw new BadGatewayException("Agent service request failed");
-    }
+    if(!response.ok) throw new BadGatewayException("Agent service request failed");
     return response.json();
   }
 }
