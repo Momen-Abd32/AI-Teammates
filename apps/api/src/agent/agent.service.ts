@@ -4,6 +4,7 @@ import { AuditService } from "../audit/audit.service";
 import { OrganizationService } from "../organization/organization.service";
 import { MemoryService } from "../memory/memory.service";
 import { MemoryLearningService } from "../memory/memory-learning.service";
+import { ConversationService } from "../conversations/conversation.service";
 
 @Injectable()
 export class AgentService {
@@ -15,6 +16,7 @@ export class AgentService {
     private org:OrganizationService,
     private memory:MemoryService,
     private learning:MemoryLearningService,
+    private conversations:ConversationService,
   ) {}
 
   async getAgent(agentId:string, companyId:string) {
@@ -49,7 +51,7 @@ export class AgentService {
     }
   }
 
-  async chat(input:{agentId:string;employeeId:string;companyId:string;role?:string;message:string}) {
+  async chat(input:{agentId:string;employeeId:string;companyId:string;conversationId?:string;role?:string;message:string}) {
     const agent = await this.getAgent(input.agentId,input.companyId);
     if(agent.employeeId !== input.employeeId) throw new BadGatewayException("Agent does not belong to employee");
 
@@ -60,6 +62,19 @@ export class AgentService {
     );
 
     this.audit.record({companyId:input.companyId,actorId:input.employeeId,agentId:input.agentId,action:"agent.chat",resource:input.agentId});
+
+    let conversationId=input.conversationId;
+    if (conversationId) {
+      const conversation=await this.conversations.context(conversationId,input.companyId,input.employeeId,12);
+      if (conversation.length) {
+        // Short-term context is attached below without bypassing tenant ownership.
+      }
+    } else {
+      const created=await this.conversations.create(input.companyId,input.employeeId,input.agentId);
+      conversationId=created.id;
+    }
+    await this.conversations.addMessage(conversationId,input.companyId,input.employeeId,"USER",input.message);
+    const history=await this.conversations.context(conversationId,input.companyId,input.employeeId,12);
 
     const memories = await this.memory.semanticSearch(
       input.companyId,
@@ -79,12 +94,16 @@ export class AgentService {
         permissions:agent.permissions ?? [],
         instructions:agent.systemInstructions ?? "",
         memories:memories.map(memory => ({scope:memory.scope,content:memory.content,score:memory.score})),
+        conversationHistory:history.map(item => ({sender:item.sender,content:item.content})),
       }),
     });
 
     if(!response.ok) throw new BadGatewayException("Agent service request failed");
     const result = await response.json() as {response?:string};
-    if (result.response) void this.learnFromConversation(input,result.response);
+    if (result.response) {
+      await this.conversations.addMessage(conversationId,input.companyId,input.employeeId,"AGENT",result.response);
+      void this.learnFromConversation(input,result.response);
+    }
     return result;
   }
 }
