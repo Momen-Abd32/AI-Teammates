@@ -30,7 +30,6 @@ services:
     build: ./apps/sandbox-worker
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    ports: ["8010:8010"]
 
   api:
     build: ./apps/api
