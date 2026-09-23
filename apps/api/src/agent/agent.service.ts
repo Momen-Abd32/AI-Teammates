@@ -58,7 +58,7 @@ export class AgentService {
   }
 
 
-  async planTool(input:{agentId:string;employeeId:string;companyId:string;message:string}) {
+  async planTool(input:{agentId:string;employeeId:string;companyId:string;message:string;conversationId?:string}) {
     const agent=await this.getAgent(input.agentId,input.companyId);
     if(agent.employeeId!==input.employeeId) throw new BadGatewayException("Agent does not belong to employee");
     this.permissions.assertWithPermissions(
@@ -67,6 +67,9 @@ export class AgentService {
       agent.permissions,
     );
     const memories=await this.memory.semanticSearch(input.companyId,input.employeeId,input.agentId,input.message,8);
+    const history=input.conversationId
+      ? await this.conversations.context(input.conversationId,input.companyId,input.employeeId,12)
+      : [];
     const baseUrl=process.env.AGENT_SERVICE_URL ?? "http://localhost:8000";
     const response=await fetch(baseUrl+"/v1/agents/plan",{
       method:"POST",
@@ -80,7 +83,7 @@ export class AgentService {
         instructions:agent.systemInstructions ?? "",
         message:input.message,
         memories:memories.map(memory=>({scope:memory.scope,content:memory.content,score:memory.score})),
-        conversationHistory:[],
+        conversationHistory:history.map(item=>({sender:item.sender,content:item.content})),
         availableTools:this.toolRegistry.list().map(tool=>({
           name:tool.name,
           description:tool.description,
@@ -98,7 +101,7 @@ export class AgentService {
   }
 
 
-  async act(input:{agentId:string;employeeId:string;companyId:string;message:string}) {
+  async act(input:{agentId:string;employeeId:string;companyId:string;message:string;conversationId?:string}) {
     const plan=await this.planTool(input);
     if(plan.action!=="TOOL" || !plan.tool) {
       return this.chat(input);
