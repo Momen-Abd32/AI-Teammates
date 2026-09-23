@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, ForbiddenException } from "@nestjs/common";
 import { randomUUID } from "crypto";
 import { DatabaseService } from "../infrastructure/database.service";
 import { ActivityEventService } from "../activity/activity.event.service";
@@ -13,7 +13,11 @@ export type Approval = {
 export class ApprovalService {
   constructor(private db:DatabaseService,private activity:ActivityEventService,private org:OrganizationService) {}
 
-  async request(input:Omit<Approval,"id"|"status">) {
+  async request(input:Omit<Approval,"id"|"status">,requesterEmployeeId?:string) {
+    const agents=await this.org.agents(input.companyId);
+    const agent=agents.find(item=>item.id===input.agentId);
+    if(!agent) throw new NotFoundException("Agent not found in company");
+    if(requesterEmployeeId && agent.employeeId!==requesterEmployeeId) throw new ForbiddenException("Approval requester does not own the agent");
     const id=randomUUID();
     const r=await this.db.query(
       `INSERT INTO approvals(id,company_id,agent_id,task_id,execution_id,action,reason,status)
@@ -22,8 +26,6 @@ export class ApprovalService {
       [id,input.companyId,input.agentId,input.taskId ?? null,input.executionId ?? null,input.action,input.reason],
     );
     const approval=r.rows[0];
-    const agents=await this.org.agents(approval.companyId);
-    const agent=agents.find(item=>item.id===approval.agentId);
     if(agent){
       await this.activity.publish({
         type:"approval.required",
