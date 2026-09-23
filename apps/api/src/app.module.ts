@@ -8,5 +8,12 @@ import {ApprovalModule} from "./approvals/approval.module";
 import {AuditModule} from "./audit/audit.module";
 import {TenantModule} from "./tenancy/tenant.module";
 import {AuthModule} from "./auth/auth.module";
-@Module({imports:[SecurityModule,AuditModule,TenantModule,AuthModule,AgentModule,MemoryModule,TaskModule,ApprovalModule],controllers:[HealthController]})
+import {CollaborationModule} from "./collaboration/collaboration.module";
+import {RepositoryModule} from "./repositories/repository.module";
+import {InfrastructureModule} from "./infrastructure/infrastructure.module";
+
+@Module({
+ imports:[InfrastructureModule,SecurityModule,AuditModule,TenantModule,AuthModule,RepositoryModule,AgentModule,MemoryModule,TaskModule,ApprovalModule,CollaborationModule],
+ controllers:[HealthController],
+})
 export class AppModule{}
