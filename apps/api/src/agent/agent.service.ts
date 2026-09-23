@@ -1,16 +1,20 @@
-import { BadGatewayException, Injectable } from "@nestjs/common";
+import { BadGatewayException, Injectable, Logger } from "@nestjs/common";
 import { PermissionService } from "../security/permission.service";
 import { AuditService } from "../audit/audit.service";
 import { OrganizationService } from "../organization/organization.service";
 import { MemoryService } from "../memory/memory.service";
+import { MemoryLearningService } from "../memory/memory-learning.service";
 
 @Injectable()
 export class AgentService {
+  private readonly logger = new Logger(AgentService.name);
+
   constructor(
     private permissions:PermissionService,
     private audit:AuditService,
     private org:OrganizationService,
     private memory:MemoryService,
+    private learning:MemoryLearningService,
   ) {}
 
   async getAgent(agentId:string, companyId:string) {
@@ -18,6 +22,31 @@ export class AgentService {
     const agent = agents.find(x => x.id === agentId);
     if(!agent) throw new BadGatewayException("Agent not found in company");
     return agent;
+  }
+
+  private async learnFromConversation(input:{agentId:string;employeeId:string;companyId:string;message:string}, response:string) {
+    if (response.startsWith("[LLM_NOT_CONFIGURED]")) return;
+    const candidate = this.learning.extract(input.message,response);
+    if (!candidate) return;
+
+    try {
+      await this.memory.create({
+        companyId:input.companyId,
+        agentId:input.agentId,
+        scope:candidate.scope,
+        content:candidate.content,
+      }, input.employeeId);
+      this.audit.record({
+        companyId:input.companyId,
+        actorId:input.employeeId,
+        agentId:input.agentId,
+        action:"agent.memory.learned",
+        resource:input.agentId,
+      });
+    } catch (error) {
+      // Learning must never make an otherwise successful chat fail.
+      this.logger.warn("Automatic memory learning skipped", error instanceof Error ? error.message : String(error));
+    }
   }
 
   async chat(input:{agentId:string;employeeId:string;companyId:string;role?:string;message:string}) {
@@ -32,8 +61,6 @@ export class AgentService {
 
     this.audit.record({companyId:input.companyId,actorId:input.employeeId,agentId:input.agentId,action:"agent.chat",resource:input.agentId});
 
-    // Memory access stays in NestJS so tenant/agent authorization is enforced before
-    // any memory is sent to the Python runtime.
     const memories = await this.memory.semanticSearch(
       input.companyId,
       input.employeeId,
@@ -56,6 +83,8 @@ export class AgentService {
     });
 
     if(!response.ok) throw new BadGatewayException("Agent service request failed");
-    return response.json();
+    const result = await response.json() as {response?:string};
+    if (result.response) void this.learnFromConversation(input,result.response);
+    return result;
   }
 }
