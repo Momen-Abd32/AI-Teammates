@@ -20,7 +20,7 @@ export class ToolController{
   const result=await this.executions.approveAndExecute(executionId,approvalId,user.employeeId);
   const agentService=this.moduleRef.get(AgentService,{strict:false});
   if(agentService){
-   const resumed=await agentService.resumeAfterApproval(executionId,true,result.result,user.companyId,user.employeeId);
+   const resumed=await agentService.resumeAfterApproval(executionId,true,result.execution?.action ?? "approved tool",result.result,user.companyId,user.employeeId);
    return resumed ?? result;
   }
   return result;
@@ -31,7 +31,7 @@ export class ToolController{
   const result=await this.executions.reject(executionId,approvalId,user.employeeId);
   const agentService=this.moduleRef.get(AgentService,{strict:false});
   if(agentService){
-   const resumed=await agentService.resumeAfterApproval(executionId,false,result.execution?.result,user.companyId,user.employeeId);
+   const resumed=await agentService.resumeAfterApproval(executionId,false,result.execution?.action ?? "rejected tool",result.execution?.result,user.companyId,user.employeeId);
    return resumed ?? result;
   }
   return result;
