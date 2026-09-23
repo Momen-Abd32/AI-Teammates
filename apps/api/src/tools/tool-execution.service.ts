@@ -4,10 +4,11 @@ import {AuditService}from "../audit/audit.service";
 import {ToolExecutionRepository}from "./tool-execution.repository";
 import {ToolPolicyService}from "./tool-policy.service";
 import {ToolRequest}from "./tool.types";
+import {SandboxService}from "../sandbox/sandbox.service";
 
 @Injectable()
 export class ToolExecutionService{
- constructor(private policy:ToolPolicyService,private executions:ToolExecutionRepository,private approvals:ApprovalService,private audit:AuditService){}
+ constructor(private policy:ToolPolicyService,private executions:ToolExecutionRepository,private approvals:ApprovalService,private audit:AuditService,private sandbox:SandboxService){}
 
  async request(input:ToolRequest){
   const decision=await this.policy.decide(input);
@@ -31,14 +32,14 @@ export class ToolExecutionService{
   if(!execution) throw new ForbiddenException("Tool execution not found");
   const approval=await this.approvals.decide(approvalId,decidedBy,"APPROVED",execution.companyId);
   if(approval.status!=="APPROVED"||approval.companyId!==execution.companyId) throw new ForbiddenException("Approval mismatch");
-  const result={status:"EXECUTED",action:execution.action,resource:execution.resource,arguments:execution.arguments};
+  const result=await this.executeTool(execution.action,execution.agentId,execution.arguments);
   const completed=await this.executions.complete(executionId,"COMPLETED",result);
   await this.audit.record({companyId:execution.companyId,actorId:decidedBy,agentId:execution.agentId,action:"TOOL_EXECUTED",resource:execution.action,metadata:{executionId,approvalId}});
   return {execution:completed,result};
  }
 
  private async executeAllowed(input:ToolRequest,executionId:string){
-  const result={status:"ACCEPTED",action:input.name,resource:input.resource,arguments:input.arguments};
+  const result=await this.executeTool(input.name,input.agentId,input.arguments);
   const completed=await this.executions.complete(executionId,"COMPLETED",result);
   await this.audit.record({companyId:input.companyId,agentId:input.agentId,action:"TOOL_EXECUTED",resource:input.name,metadata:{executionId}});
   return {execution:completed,result};
