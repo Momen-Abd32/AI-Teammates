@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  repository-checks:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,6 +14,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: pnpm
 
       - uses: pnpm/action-setup@v4
         with:
@@ -22,14 +23,20 @@ jobs:
       - name: Install workspace dependencies
         run: pnpm install --no-frozen-lockfile
 
+      - name: Typecheck API
+        run: pnpm --filter @ai-teammates/api lint
+
+      - name: Test API
+        run: pnpm --filter @ai-teammates/api test
+
+      - name: Typecheck web
+        run: pnpm --filter @ai-teammates/web lint
+
       - name: Build API
         run: pnpm --filter @ai-teammates/api build
 
       - name: Build web
         run: pnpm --filter @ai-teammates/web build
-
-      - name: Run API tests
-        run: pnpm --filter @ai-teammates/api test
 
       - name: Python syntax check
         run: python -m compileall apps/agent-service/app
