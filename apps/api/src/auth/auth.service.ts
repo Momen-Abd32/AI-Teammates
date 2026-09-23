@@ -9,7 +9,19 @@ const TTL=60*60*8;
 export class AuthService {
   constructor(private db:DatabaseService){}
 
-  private secret(){return process.env.AUTH_SECRET ?? "CHANGE_ME_IN_PRODUCTION";}
+  private secret(){
+    const configured=process.env.AUTH_SECRET?.trim();
+    if(!configured){
+      if(process.env.NODE_ENV==="production"){
+        throw new UnauthorizedException("AUTH_SECRET must be configured in production");
+      }
+      return "development-only-auth-secret-change-me";
+    }
+    if(configured.length<32){
+      throw new UnauthorizedException("AUTH_SECRET must contain at least 32 characters");
+    }
+    return configured;
+  }
 
   private sign(payload:Session){
     const body=Buffer.from(JSON.stringify(payload)).toString("base64url");
@@ -60,7 +72,7 @@ export class AuthService {
       `INSERT INTO employees(id,company_id,name,email,role,password_hash)
        VALUES(gen_random_uuid(),$1,$2,lower($3),$4,$5)
        RETURNING id,company_id AS "companyId",name,email,role`,
-      [input.companyId,input.name,input.email,input.role??"employee",passwordHash],
+      [input.companyId,input.name,input.email,"employee",passwordHash],
     );
     return this.issue(r.rows[0].companyId,r.rows[0].id,r.rows[0].role);
   }
