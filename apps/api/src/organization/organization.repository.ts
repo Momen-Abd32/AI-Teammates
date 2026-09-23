@@ -72,4 +72,12 @@ export class OrganizationRepository {
     );
     return r.rows;
   }
+
+  async agentsForEmployee(companyId:string,employeeId:string) {
+    const r = await this.db.query(
+      "SELECT id,company_id AS \"companyId\",employee_id AS \"employeeId\",role,system_instructions AS \"systemInstructions\",permissions FROM agents WHERE company_id=$1 AND employee_id=$2 ORDER BY created_at",
+      [companyId,employeeId],
+    );
+    return r.rows;
+  }
 }
