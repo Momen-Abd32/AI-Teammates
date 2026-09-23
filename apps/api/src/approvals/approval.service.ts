@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { randomUUID } from "crypto";
 import { DatabaseService } from "../infrastructure/database.service";
 import { ActivityEventService } from "../activity/activity.event.service";
+import { OrganizationService } from "../organization/organization.service";
 
 export type Approval = {
   id:string; companyId:string; agentId:string; taskId?:string;
@@ -10,7 +11,7 @@ export type Approval = {
 
 @Injectable()
 export class ApprovalService {
-  constructor(private db:DatabaseService,private activity:ActivityEventService) {}
+  constructor(private db:DatabaseService,private activity:ActivityEventService,private org:OrganizationService) {}
 
   async request(input:Omit<Approval,"id"|"status">) {
     const id=randomUUID();
@@ -21,13 +22,17 @@ export class ApprovalService {
       [id,input.companyId,input.agentId,input.taskId ?? null,input.action,input.reason],
     );
     const approval=r.rows[0];
-    await this.activity.publish({
-      type:"approval.required",
-      companyId:approval.companyId,
-      employeeId:input.agentId,
-      agentId:approval.agentId,
-      message:`Approval required: ${approval.action}`,
-    });
+    const agents=await this.org.agents(approval.companyId);
+    const agent=agents.find(item=>item.id===approval.agentId);
+    if(agent){
+      await this.activity.publish({
+        type:"approval.required",
+        companyId:approval.companyId,
+        employeeId:agent.employeeId,
+        agentId:approval.agentId,
+        message:`Approval required: ${approval.action}`,
+      });
+    }
     return approval;
   }
 
