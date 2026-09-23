@@ -19,11 +19,17 @@ jobs:
         with:
           version: 10
 
-      - name: Install TypeScript dependencies
+      - name: Install workspace dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Build TypeScript apps
+      - name: Build API
         run: pnpm --filter @ai-teammates/api build
+
+      - name: Build web
+        run: pnpm --filter @ai-teammates/web build
+
+      - name: Run API tests
+        run: pnpm --filter @ai-teammates/api test
 
       - name: Python syntax check
         run: python -m compileall apps/agent-service/app
