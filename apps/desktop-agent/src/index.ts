@@ -11,7 +11,7 @@ const WORKSPACE=resolve(process.env.DEVICE_WORKSPACE ?? process.cwd());
 
 if(!DEVICE_TOKEN) throw new Error("DEVICE_TOKEN is required");
 
-const allowedActions=new Set(["device.files.read","device.files.write","device.terminal.execute"]);
+const allowedActions=new Set((process.env.DEVICE_ALLOWED_ACTIONS??"device.files.read").split(",").map(x=>x.trim()).filter(Boolean));
 
 function safePath(input:string){
   const target=resolve(WORKSPACE,input);
@@ -27,6 +27,8 @@ async function execute(action:string,args:any){
     await writeFile(safePath(String(args.path)),String(args.content),"utf8");
     return {ok:true};
   }
+  if(action==="device.screenshot") throw new Error("Screenshot capability is reserved for the desktop integration layer");
+  if(action==="device.browser") throw new Error("Browser capability is reserved for the browser automation layer");
   if(action==="device.terminal.execute"){
     const command=String(args.command??"").trim();
     if(!command) throw new Error("Command is required");
