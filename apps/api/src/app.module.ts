@@ -26,7 +26,7 @@ import {APP_GUARD} from "@nestjs/core";
 @Module({
  imports:[InfrastructureModule,SecurityModule,AuditModule,TenantModule,AuthModule,RepositoryModule,
  AgentModule,MemoryModule,TaskModule,TaskDependencyModule,ApprovalModule,CollaborationModule,MessageModule,
- SandboxModule,OrganizationModule,DepartmentModule,ProjectModule,E2EFlowModule],
+ SandboxModule,OrganizationModule,DepartmentModule,ProjectModule,E2EFlowModule,ToolModule],
  controllers:[HealthController],providers:[{provide:APP_GUARD,useClass:AuthGuard},{provide:APP_GUARD,useClass:RolesGuard}]
 })
 export class AppModule {}
