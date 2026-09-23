@@ -20,6 +20,7 @@ import {ProjectModule} from "./projects/project.module";
 import {E2EFlowModule} from "./e2e-flow/e2e-flow.module";
 import {AuthGuard} from "./auth/auth.guard";
 import {RolesGuard} from "./auth/roles.guard";
+import {ToolModule} from "./tools/tool.module";
 import {APP_GUARD} from "@nestjs/core";
 
 @Module({
