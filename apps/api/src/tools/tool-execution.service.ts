@@ -6,10 +6,11 @@ import {ToolPolicyService}from "./tool-policy.service";
 import {ToolRequest}from "./tool.types";
 import {SandboxService}from "../sandbox/sandbox.service";
 import {ActivityEventService}from "../activity/activity.event.service";
+import { DeviceService } from "../devices/device.service";
 
 @Injectable()
 export class ToolExecutionService{
- constructor(private policy:ToolPolicyService,private executions:ToolExecutionRepository,private approvals:ApprovalService,private audit:AuditService,private sandbox:SandboxService,private activity:ActivityEventService){}
+ constructor(private policy:ToolPolicyService,private executions:ToolExecutionRepository,private approvals:ApprovalService,private audit:AuditService,private sandbox:SandboxService,private activity:ActivityEventService,private devices:DeviceService){}
 
  async request(input:ToolRequest){
   await this.activity.publish({type:"tool.started",companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId,message:`Tool requested: ${input.name}`,...(input.taskId?{conversationId:input.taskId}: {})});
