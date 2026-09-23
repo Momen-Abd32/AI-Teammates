@@ -18,11 +18,13 @@ import {OrganizationModule} from "./organization/organization.module";
 import {DepartmentModule} from "./organization/department.module";
 import {ProjectModule} from "./projects/project.module";
 import {E2EFlowModule} from "./e2e-flow/e2e-flow.module";
+import {AuthGuard} from "./auth/auth.guard";
+import {APP_GUARD} from "@nestjs/core";
 
 @Module({
  imports:[InfrastructureModule,SecurityModule,AuditModule,TenantModule,AuthModule,RepositoryModule,
  AgentModule,MemoryModule,TaskModule,TaskDependencyModule,ApprovalModule,CollaborationModule,MessageModule,
  SandboxModule,OrganizationModule,DepartmentModule,ProjectModule,E2EFlowModule],
- controllers:[HealthController]
+ controllers:[HealthController],providers:[{provide:APP_GUARD,useClass:AuthGuard}]
 })
 export class AppModule {}
