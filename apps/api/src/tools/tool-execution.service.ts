@@ -36,7 +36,6 @@ export class ToolExecutionService{
   if(approval.status!=="APPROVED"||approval.companyId!==execution.companyId) throw new ForbiddenException("Approval mismatch");
   const result=await this.executeTool(execution.action,execution.agentId,execution.arguments);
   const completed=await this.executions.complete(executionId,"COMPLETED",result);
-  await this.activity.publish({type:"tool.completed",companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId,message:`Tool completed: ${input.name}`});
   await this.activity.publish({type:"tool.completed",companyId:execution.companyId,employeeId:decidedBy,agentId:execution.agentId,message:`Tool completed: ${execution.action}`});
   await this.audit.record({companyId:execution.companyId,actorId:decidedBy,agentId:execution.agentId,action:"TOOL_EXECUTED",resource:execution.action,metadata:{executionId,approvalId}});
   return {execution:completed,result};
