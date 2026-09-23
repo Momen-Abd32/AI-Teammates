@@ -36,6 +36,7 @@ export class ToolExecutionService{
   const approval=await this.approvals.decide(approvalId,decidedBy,"REJECTED",execution.companyId);
   if(approval.status!=="REJECTED"||approval.companyId!==execution.companyId) throw new ForbiddenException("Approval mismatch");
   const completed=await this.executions.complete(executionId,"REJECTED",{reason:"Human rejected the requested action"});
+  if(!completed) throw new ForbiddenException("Tool execution was already finalized");
   await this.audit.record({companyId:execution.companyId,actorId:decidedBy,agentId:execution.agentId,action:"TOOL_REJECTED",resource:execution.action,metadata:{executionId,approvalId}});
   return {execution:completed};
  }
@@ -48,6 +49,7 @@ export class ToolExecutionService{
   if(approval.status!=="APPROVED"||approval.companyId!==execution.companyId) throw new ForbiddenException("Approval mismatch");
   const result=await this.executeTool(execution.action,execution.agentId,execution.arguments);
   const completed=await this.executions.complete(executionId,"COMPLETED",result);
+  if(!completed) throw new ForbiddenException("Tool execution was already finalized");
   await this.activity.publish({type:"tool.completed",companyId:execution.companyId,employeeId:decidedBy,agentId:execution.agentId,message:`Tool completed: ${execution.action}`});
   await this.audit.record({companyId:execution.companyId,actorId:decidedBy,agentId:execution.agentId,action:"TOOL_EXECUTED",resource:execution.action,metadata:{executionId,approvalId}});
   return {execution:completed,result};
