@@ -71,8 +71,8 @@ export class DeviceRepository {
     return r.rows[0];
   }
 
-  async command(id:string,companyId:string) {
-    const r=await this.db.query('SELECT id,company_id AS "companyId",device_id AS "deviceId",agent_id AS "agentId",action,arguments,status,result,approval_id AS "approvalId" FROM device_commands WHERE id=$1 AND company_id=$2',[id,companyId]);
+  async commandForDevice(id:string,deviceId:string) {
+    const r=await this.db.query('SELECT id,company_id AS "companyId",device_id AS "deviceId",agent_id AS "agentId",action,arguments,status,result,approval_id AS "approvalId" FROM device_commands WHERE id=$1 AND device_id=$2',[id,deviceId]);
     return r.rows[0] ?? null;
   }
 
