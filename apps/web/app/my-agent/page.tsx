@@ -65,13 +65,19 @@ export default function MyAgent(){
     const text=input.trim();
     setInput("");setSending(true);setError("");
     setMessages(prev=>[...prev,{id:"local-"+Date.now(),sender:"USER",content:text,createdAt:new Date().toISOString()}]);
-    const r=await apiFetch("/agents/chat",{method:"POST",body:JSON.stringify({
-      agentId:activeAgent.id,employeeId:user.employeeId,companyId:user.companyId,
-      conversationId:conversation.id,message:text
+    const r=await apiFetch("/agents/act",{method:"POST",body:JSON.stringify({
+      agentId:activeAgent.id,message:text
     })});
     if(!r.ok){setError("Agent request failed.");setSending(false);return;}
     const result=await r.json();
-    setMessages(prev=>[...prev,{id:"agent-"+Date.now(),sender:"AGENT",content:result.response??"",createdAt:new Date().toISOString()}]);
+    if(result.status==="WAITING_FOR_HUMAN"){
+      const action=result.approval?.action ?? result.execution?.action ?? "sensitive action";
+      setMessages(prev=>[...prev,{id:"approval-"+Date.now(),sender:"SYSTEM",content:`Human approval required for: ${action}. Open Approvals to continue.`,createdAt:new Date().toISOString()}]);
+    }else if(result.response){
+      setMessages(prev=>[...prev,{id:"agent-"+Date.now(),sender:"AGENT",content:result.response,createdAt:new Date().toISOString()}]);
+    }else if(result.result){
+      setMessages(prev=>[...prev,{id:"tool-"+Date.now(),sender:"AGENT",content:`Tool completed: ${JSON.stringify(result.result,null,2)}`,createdAt:new Date().toISOString()}]);
+    }
     const refreshed=await apiFetch("/conversations");
     if(refreshed.ok)setConversations(await refreshed.json());
     setSending(false);
