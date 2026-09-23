@@ -20,7 +20,7 @@ export class ToolExecutionService{
   });
   if(decision.requiresApproval){
    const approval=await this.approvals.request({
-    companyId:input.companyId,agentId:input.agentId,taskId:input.taskId,
+    companyId:input.companyId,agentId:input.agentId,taskId:input.taskId,executionId:execution.id,
     action:input.name,reason:input.reason??decision.reason,
    });
    await this.audit.record({companyId:input.companyId,agentId:input.agentId,action:"TOOL_APPROVAL_REQUESTED",resource:input.name,metadata:{executionId:execution.id,approvalId:approval.id}});
