@@ -38,6 +38,17 @@ export class AgentRunRepository {
     return r.rows[0] ?? null;
   }
 
+  async claimWaiting(id:string,executionId:string,approvalId:string){
+    const r=await this.db.query(`UPDATE agent_runs SET status='RUNNING',waiting_execution_id=NULL,waiting_approval_id=NULL,updated_at=now()
+      WHERE id=$1 AND status='WAITING_FOR_HUMAN' AND waiting_execution_id=$2 AND waiting_approval_id=$3
+      RETURNING id,company_id AS "companyId",employee_id AS "employeeId",agent_id AS "agentId",
+        conversation_id AS "conversationId",message,status,current_step AS "currentStep",max_steps AS "maxSteps",
+        results,waiting_execution_id AS "waitingExecutionId",waiting_approval_id AS "waitingApprovalId",
+        created_at AS "createdAt",updated_at AS "updatedAt",completed_at AS "completedAt"`,
+      [id,executionId,approvalId]);
+    return r.rows[0] ?? null;
+  }
+
   async update(id:string,input:{status?:AgentRunStatus;currentStep?:number;results?:AgentRunResult[];waitingExecutionId?:string|null;waitingApprovalId?:string|null;completed?:boolean}){
     const r=await this.db.query(`UPDATE agent_runs SET
       status=COALESCE($2,status),
