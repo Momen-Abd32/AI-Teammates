@@ -1,1 +1,6 @@
-import{Module}from"@nestjs/common";import{MemoryController}from"./memory.controller";import{MemoryService}from"./memory.service";@Module({controllers:[MemoryController],providers:[MemoryService],exports:[MemoryService]})export class MemoryModule{}
+import{Module}from "@nestjs/common";
+import{MemoryController}from "./memory.controller";
+import{MemoryService}from "./memory.service";
+import{OrganizationModule}from "../organization/organization.module";
+@Module({imports:[OrganizationModule],controllers:[MemoryController],providers:[MemoryService],exports:[MemoryService]})
+export class MemoryModule{}
