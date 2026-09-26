@@ -29,7 +29,7 @@ export class OrchestratorService{
    projectId:input.projectId,
    type:"TASK_REQUEST",
    payload:{title:task.title,description:task.description},
-  });
+  }, input.employeeId);
   return task;
  }
 }
