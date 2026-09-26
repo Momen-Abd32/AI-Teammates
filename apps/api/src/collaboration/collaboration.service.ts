@@ -19,7 +19,8 @@ export class CollaborationService {
     const sender=agents.find(agent=>agent.id===input.senderAgentId);
     const receiver=agents.find(agent=>agent.id===input.receiverAgentId);
     if(!sender || !receiver) throw new ForbiddenException("Both agents must belong to the company");
-    if(requesterEmployeeId && sender.employeeId!==requesterEmployeeId) throw new ForbiddenException("Sender agent does not belong to the authenticated employee");
+    if(!requesterEmployeeId) throw new ForbiddenException("Authenticated employee context is required");
+    if(sender.employeeId!==requesterEmployeeId) throw new ForbiddenException("Sender agent does not belong to the authenticated employee");
 
     const receiverPermissions=Array.isArray(receiver.permissions)?receiver.permissions:[];
     if(!receiverPermissions.includes("agent.collaborate")) throw new ForbiddenException("Receiver agent is not allowed to collaborate");
