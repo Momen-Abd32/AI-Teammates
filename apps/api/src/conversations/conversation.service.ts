@@ -29,8 +29,10 @@ export class ConversationService {
     return this.repo.messages(id,limit);
   }
   async updateTitle(id:string,companyId:string,employeeId:string,title:string){
-    const conversation=await this.repo.findOwned(id,companyId,employeeId);\n    if(!conversation) throw new ForbiddenException("Conversation access denied");
-    const clean=title.trim().replace(/\\s+/g," ").slice(0,80);\n    if(!clean) throw new BadRequestException("Conversation title is required");\n    return this.repo.updateTitle(id,clean);
+    const conversation=await this.repo.findOwned(id,companyId,employeeId);
+    if(!conversation) throw new ForbiddenException("Conversation access denied");
+    const clean=title.trim().replace(/\s+/g," ").slice(0,80);
+    if(!clean) throw new BadRequestException("Conversation title is required");\n    return this.repo.updateTitle(id,clean);
   }
 
   async addMessage(id:string,companyId:string,employeeId:string,sender:"USER"|"AGENT"|"SYSTEM",content:string){
