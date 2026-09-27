@@ -38,4 +38,9 @@ jobs:
         run: pnpm --filter @ai-teammates/web build
 
       - name: Python syntax check
-        run: python -m compileall apps/agent-service/app
+        run: |
+          python -m compileall apps/agent-service/app
+          python -m compileall apps/sandbox-worker
+
+      - name: Validate Docker Compose
+        run: docker compose config
