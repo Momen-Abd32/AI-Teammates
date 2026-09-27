@@ -11,8 +11,9 @@ export class MessageRepository {
       [message.companyId,message.taskId,message.senderAgentId,message.receiverAgentId,message.type,JSON.stringify(message.payload)]);
     return r.rows[0];
   }
-  async listTask(taskId:string){
-    const r=await this.db.query(`SELECT id,company_id AS "companyId",task_id AS "taskId",sender_agent_id AS "senderAgentId",receiver_agent_id AS "receiverAgentId",type,payload,created_at AS "createdAt" FROM messages WHERE task_id=$1 ORDER BY created_at`,[taskId]);
+  async listTask(taskId:string,companyId:string){
+    const r=await this.db.query(`SELECT id,company_id AS "companyId",task_id AS "taskId",sender_agent_id AS "senderAgentId",receiver_agent_id AS "receiverAgentId",type,payload,created_at AS "createdAt"
+      FROM messages WHERE task_id=$1 AND company_id=$2 ORDER BY created_at`,[taskId,companyId]);
     return r.rows;
   }
 }
