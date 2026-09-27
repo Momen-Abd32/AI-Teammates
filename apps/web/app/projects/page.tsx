@@ -1,5 +1,5 @@
-import {apiFetch} from "../../lib/auth";
 "use client";
+import {apiFetch} from "../../lib/auth";
 import {useEffect,useState} from "react";
 const API=process.env.NEXT_PUBLIC_API_URL??"http://localhost:3001/api";
 export default function Projects(){
