@@ -7,6 +7,18 @@ export type AgentTaskMessage={taskId:string;senderAgentId:string;receiverAgentId
 export class MessageBusService {
   constructor(private readonly redis: RedisService) {}
 
+  publishResponse(message: AgentTaskMessage) {
+    return this.redis.publish("agent:responses", {
+      taskId:message.taskId,
+      senderAgentId:message.senderAgentId,
+      receiverAgentId:message.receiverAgentId,
+      companyId:message.companyId,
+      projectId:message.projectId ?? "",
+      type:message.type,
+      payload:JSON.stringify(message.payload),
+    });
+  }
+
   publish(message: AgentTaskMessage) {
     return this.redis.publish("agent:tasks", {
       taskId:message.taskId,
