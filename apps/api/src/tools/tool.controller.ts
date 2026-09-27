@@ -31,7 +31,7 @@ export class ToolController{
    arguments:b.arguments??{},
   });
   if(b.taskId){
-   const status=result.status==="WAITING_FOR_HUMAN"?"WAITING_FOR_HUMAN":"IN_PROGRESS";
+   const status=("status" in result && result.status==="WAITING_FOR_HUMAN")?"WAITING_FOR_HUMAN":"IN_PROGRESS";
    await this.tasks.updateStatus(b.taskId,status,user.companyId);
   }
   return result;
@@ -61,7 +61,7 @@ export class ToolController{
    if(approval.taskId){
     await this.tasks.updateStatus(
      approval.taskId,
-     resumed?.status==="COMPLETED"?"COMPLETED":"IN_PROGRESS",
+     (resumed as {status?:string}|null)?.status==="COMPLETED"?"COMPLETED":"IN_PROGRESS",
      user.companyId,
     );
    }
