@@ -228,7 +228,7 @@ export class AgentService {
 
     let conversationId=input.conversationId;
     if (conversationId) {
-      await this.conversations.context(activeConversationId,input.companyId,input.employeeId,12);
+      await this.conversations.context(conversationId,input.companyId,input.employeeId,12);
     } else {
       const created=await this.conversations.create(input.companyId,input.employeeId,input.agentId);
       conversationId=created.id;
@@ -241,7 +241,7 @@ export class AgentService {
       const title=input.message.trim().replace(/\s+/g," ").slice(0,60);
       await this.conversations.updateTitle(activeConversationId,input.companyId,input.employeeId,title || "New conversation");
     }
-    const history=await this.conversations.context(conversationId,input.companyId,input.employeeId,12);
+    const history=await this.conversations.context(activeConversationId,input.companyId,input.employeeId,12);
     const memories = await this.memory.semanticSearch(input.companyId,input.employeeId,input.agentId,input.message,8);
     await this.activity.publish({type:"memory.retrieved",companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId,conversationId:activeConversationId,message:`Retrieved ${memories.length} memories`});
 
@@ -255,12 +255,12 @@ export class AgentService {
       }),
     });
     if(!response.ok){
-      await this.activity.publish({type:"agent.failed",companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId,conversationId,message:"Agent service request failed"});
+      await this.activity.publish({type:"agent.failed",companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId,conversationId:activeConversationId,message:"Agent service request failed"});
       throw new BadGatewayException("Agent service request failed");
     }
     const result = await response.json() as {response?:string};
     if (result.response) {
-      await this.activity.publish({type:"agent.completed",companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId,conversationId,message:"Agent completed"});
+      await this.activity.publish({type:"agent.completed",companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId,conversationId:activeConversationId,message:"Agent completed"});
       await this.conversations.addMessage(activeConversationId,input.companyId,input.employeeId,"AGENT",result.response);
       void this.learnFromConversation(input,result.response);
     }
