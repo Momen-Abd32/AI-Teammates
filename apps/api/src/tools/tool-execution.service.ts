@@ -7,10 +7,11 @@ import {ToolRequest}from "./tool.types";
 import {SandboxService}from "../sandbox/sandbox.service";
 import {ActivityEventService}from "../activity/activity.event.service";
 import { DeviceService } from "../devices/device.service";
+import { OrganizationService } from "../organization/organization.service";
 
 @Injectable()
 export class ToolExecutionService{
- constructor(private policy:ToolPolicyService,private executions:ToolExecutionRepository,private approvals:ApprovalService,private audit:AuditService,private sandbox:SandboxService,private activity:ActivityEventService,private devices:DeviceService){}
+ constructor(private policy:ToolPolicyService,private executions:ToolExecutionRepository,private approvals:ApprovalService,private audit:AuditService,private sandbox:SandboxService,private activity:ActivityEventService,private devices:DeviceService,private org:OrganizationService){}
 
  async request(input:ToolRequest){
   await this.activity.publish({type:"tool.started",companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId,message:`Tool requested: ${input.name}`,...(input.taskId?{conversationId:input.taskId}: {})});
@@ -52,6 +53,19 @@ export class ToolExecutionService{
   if(pendingApproval.status!=="PENDING"||pendingApproval.executionId!==executionId) throw new ForbiddenException("Approval mismatch");
   const approval=await this.approvals.decide(approvalId,decidedBy,"APPROVED",execution.companyId);
   if(approval.status!=="APPROVED"||approval.companyId!==execution.companyId||approval.executionId!==executionId) throw new ForbiddenException("Approval mismatch");
+  const agents=await this.org.agents(execution.companyId);
+  const agent=agents.find(item=>item.id===execution.agentId);
+  if(!agent) throw new ForbiddenException("Tool execution agent is no longer available");
+  const policy=await this.policy.decide({
+   companyId:execution.companyId,
+   employeeId:agent.employeeId,
+   agentId:execution.agentId,
+   name:execution.action,
+   resource:execution.resource,
+   arguments:execution.arguments,
+   reason:"Revalidated before approved execution",
+  });
+  if(!policy.allowed) throw new ForbiddenException("Tool execution is no longer permitted");
   const result=await this.executeTool(execution.action,execution.agentId,execution.arguments);
   const completed=await this.executions.complete(executionId,"COMPLETED",result);
   if(!completed) throw new ForbiddenException("Tool execution was already finalized");
