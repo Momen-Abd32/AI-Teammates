@@ -2,10 +2,11 @@ import{ForbiddenException,Injectable}from"@nestjs/common";
 import{OrganizationService}from"../organization/organization.service";
 import{TaskService}from"../tasks/task.service";
 import{CollaborationService}from"../collaboration/collaboration.service";
+import{ProjectService}from"../projects/project.service";
 
 @Injectable()
 export class OrchestratorService{
- constructor(private org:OrganizationService,private tasks:TaskService,private collaboration:CollaborationService){}
+ constructor(private org:OrganizationService,private tasks:TaskService,private collaboration:CollaborationService,private projects:ProjectService){}
  async dispatch(input:{companyId:string;senderAgentId:string;receiverAgentId:string;title:string;description:string;projectId?:string;employeeId:string}){
   const agents=await this.org.agents(input.companyId);
   const sender=agents.find(a=>a.id===input.senderAgentId);
@@ -13,6 +14,7 @@ export class OrchestratorService{
   if(!sender||!receiver)throw new ForbiddenException("Both agents must belong to the company");
   if(sender.employeeId!==input.employeeId)throw new ForbiddenException("Sender agent does not belong to the authenticated employee");
   if(sender.id===receiver.id)throw new ForbiddenException("An agent cannot delegate to itself");
+  if(input.projectId) await this.projects.getForCompany(input.projectId,input.companyId);
   const task=await this.tasks.create({
    companyId:input.companyId,
    title:input.title.trim(),
