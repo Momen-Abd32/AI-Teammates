@@ -89,7 +89,7 @@ export class ApprovalService {
     const r=await this.db.query(
       `UPDATE approvals SET status=$1,decided_by=$2,decided_at=now()
        WHERE id=$3 AND status='PENDING' AND company_id=$4
-       RETURNING id,company_id AS "companyId",agent_id AS "agentId",task_id AS "taskId",
+       RETURNING id,company_id AS "companyId",agent_id AS "agentId",task_id AS "taskId",execution_id AS "executionId",
                  action,reason,status,decided_by AS "decidedBy"`,
       [status,decidedBy,id,row.companyId],
     );
