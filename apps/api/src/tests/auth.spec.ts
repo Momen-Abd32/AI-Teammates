@@ -2,7 +2,7 @@ import {AuthService} from "../auth/auth.service";
 
 describe("authentication",()=>{
   const db:any={query:jest.fn()};
-  beforeEach(()=>{db.query.mockReset();process.env.AUTH_SECRET="test-secret";});
+  beforeEach(()=>{db.query.mockReset();process.env.AUTH_SECRET="test-secret-for-ai-teammates-ci-2026";});
 
   it("issues and validates a signed session",()=>{
     const service=new AuthService(db);
