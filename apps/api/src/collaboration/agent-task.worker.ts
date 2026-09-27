@@ -1,4 +1,4 @@
-import{Injectable,Logger,OnModuleInit}from"@nestjs/common";
+import{ForbiddenException,Injectable,Logger,OnModuleInit}from"@nestjs/common";
 import{RedisService}from"../infrastructure/redis.service";
 import{OrganizationService}from"../organization/organization.service";
 import{TaskService}from"../tasks/task.service";
@@ -28,22 +28,27 @@ export class AgentTaskWorker implements OnModuleInit{
  }
  private async handle(streamId:string,data:Record<string,string>){
   if(data.type!=="TASK_REQUEST"){await this.redis.ack("agent:tasks",this.group,streamId);return;}
-  const taskId=data.taskId,companyId=data.companyId,receiverAgentId=data.receiverAgentId;
-  if(!taskId||!companyId||!receiverAgentId){await this.redis.ack("agent:tasks",this.group,streamId);return;}
-  const agents=await this.org.agents(companyId);
-  const receiver=agents.find(a=>a.id===receiverAgentId);
-  if(!receiver){await this.tasks.updateStatus(taskId,"FAILED",companyId);await this.redis.ack("agent:tasks",this.group,streamId);return;}
-  await this.tasks.updateStatus(taskId,"IN_PROGRESS",companyId);
+  const taskId=data.taskId,companyId=data.companyId,receiverAgentId=data.receiverAgentId,senderAgentId=data.senderAgentId;
+  if(!taskId||!companyId||!receiverAgentId||!senderAgentId){await this.redis.ack("agent:tasks",this.group,streamId);return;}
   try{
+   const task=await this.tasks.getForCompany(taskId,companyId);
+   const agents=await this.org.agents(companyId);
+   const receiver=agents.find(a=>a.id===receiverAgentId);
+   const sender=agents.find(a=>a.id===senderAgentId);
+   if(!receiver||!sender)throw new ForbiddenException("Delegation agents must belong to the task company");
+   if(receiver.id===sender.id)throw new ForbiddenException("An agent cannot execute its own delegation");
+   if(task.assignedAgentId!==receiver.id)throw new ForbiddenException("Task is not assigned to the receiving agent");
+   if(task.projectId&&data.projectId&&task.projectId!==data.projectId)throw new ForbiddenException("Task project context mismatch");
+   await this.tasks.updateStatus(taskId,"IN_PROGRESS",companyId);
    const payload=JSON.parse(data.payload??"{}") as {title?:string;description?:string};
-   const result=await this.agents.chat({agentId:receiver.id,employeeId:receiver.employeeId,companyId,message:`Delegated task: ${payload.title??"Task"}\n\n${payload.description??""}`});
-   const response:Record<string,unknown>={taskId,senderAgentId:receiver.id,receiverAgentId:data.senderAgentId,companyId,type:"TASK_RESPONSE",payload:{response:result.response??""}};
-   await this.messages.create(response as any);
+   const result=await this.agents.chat({agentId:receiver.id,employeeId:receiver.employeeId,companyId,message:`Delegated task: ${payload.title??task.title}\n\n${payload.description??task.description}`});
+   const response={taskId,senderAgentId:receiver.id,receiverAgentId:sender.id,companyId,projectId:task.projectId,type:"TASK_RESPONSE" as const,payload:{response:result.response??""}};
+   await this.messages.create(response);
    await this.redis.publish("agent:responses",Object.fromEntries(Object.entries(response).map(([k,v])=>[k,typeof v==="string"?v:JSON.stringify(v)])));
    await this.tasks.updateStatus(taskId,"COMPLETED",companyId);
    await this.redis.ack("agent:tasks",this.group,streamId);
   }catch(error){
-   await this.tasks.updateStatus(taskId,"FAILED",companyId);
+   await this.tasks.updateStatus(taskId,"FAILED",companyId).catch(()=>undefined);
    await this.redis.ack("agent:tasks",this.group,streamId);
    this.logger.warn("Delegated agent task failed",error instanceof Error?error.message:String(error));
   }
