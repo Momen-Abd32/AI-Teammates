@@ -4,7 +4,7 @@ import {randomUUID} from "crypto";
 
 export type ActivityEvent = {
   id:string;
-  type:"agent.started"|"memory.retrieved"|"tool.started"|"tool.completed"|"agent.delegated"|"approval.required"|"approval.approved"|"approval.rejected"|"agent.completed"|"agent.failed";
+  type:"agent.started"|"memory.retrieved"|"tool.started"|"tool.completed"|"agent.delegated"|"approval.required"|"approval.approved"|"approval.rejected"|"agent.completed"|"agent.task_completed"|"agent.failed";
   companyId:string;
   employeeId:string;
   agentId:string;
