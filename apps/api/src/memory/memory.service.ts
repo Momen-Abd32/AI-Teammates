@@ -18,7 +18,7 @@ export class MemoryService {
   private async assertOwner(companyId:string,employeeId:string,agentId:string){
     const agents=await this.org.agents(companyId);
     const agent=agents.find(x=>x.id===agentId);
-    if(!agent || agent.employeeId!==employeeId) throw new ForbiddenException("Agent memory access denied");
+    if(!agent || agent.companyId!==companyId || agent.employeeId!==employeeId) throw new ForbiddenException("Agent memory access denied");
     return agent;
   }
 
