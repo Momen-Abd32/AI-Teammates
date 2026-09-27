@@ -31,17 +31,18 @@ export class MemoryRepository {
     return (result.rowCount ?? 0)>0;
   }
 
-  async semanticSearch(agentId:string,embedding:number[],limit=5,scope?:string){
-    const values=[agentId,JSON.stringify(embedding),limit];
-    const scopeClause=scope ? " AND scope=$4" : "";
+  async semanticSearch(companyId:string,agentId:string,embedding:number[],limit=5,scope?:string){
+    const values=[agentId,companyId,JSON.stringify(embedding),limit];
+    const scopeClause=scope ? " AND scope=$5" : "";
     if(scope) values.push(scope);
     const result=await this.db.query(
       `SELECT id,company_id AS "companyId",agent_id AS "agentId",scope,content,
-              1-(embedding <=> $2::vector) AS score
+              1-(embedding <=> $3::vector) AS score
        FROM memories
-       WHERE agent_id=$1 AND embedding IS NOT NULL${scopeClause}
-       ORDER BY embedding <=> $2::vector
-       LIMIT $3`,
+       WHERE (agent_id=$1 OR (company_id=$2 AND scope='COMPANY'))
+         AND embedding IS NOT NULL${scopeClause}
+       ORDER BY embedding <=> $3::vector
+       LIMIT $4`,
       values,
     );
     return result.rows;
