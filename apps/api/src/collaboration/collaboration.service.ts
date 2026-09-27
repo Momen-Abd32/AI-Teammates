@@ -39,4 +39,31 @@ export class CollaborationService {
     });
     return this.bus.publish({...input,type:"TASK_REQUEST"});
   }
+  async respondTask(input:AgentTaskMessage,requesterEmployeeId?:string){
+    if(input.type!=="TASK_RESPONSE") throw new ForbiddenException("Task response message is required");
+    if(!input.companyId || !input.taskId || !input.receiverAgentId) throw new ForbiddenException("Company, task and receiver context are required");
+
+    const task=await this.tasks.getForCompany(input.taskId,input.companyId);
+    const agents=await this.org.agents(input.companyId);
+    const sender=agents.find(agent=>agent.id===input.senderAgentId);
+    const receiver=agents.find(agent=>agent.id===input.receiverAgentId);
+    if(!sender || !receiver) throw new ForbiddenException("Both agents must belong to the company");
+    if(!requesterEmployeeId) throw new ForbiddenException("Authenticated employee context is required");
+    if(sender.employeeId!==requesterEmployeeId) throw new ForbiddenException("Responding agent does not belong to the authenticated employee");
+    if(sender.id===receiver.id) throw new ForbiddenException("Sender and receiver agents must be different");
+    if(task.assignedAgentId!==sender.id) throw new ForbiddenException("Only the assigned agent can complete this task");
+    if(input.projectId && task.projectId && input.projectId!==task.projectId) throw new ForbiddenException("Project context does not match task");
+
+    const message=await this.messages.create({...input,type:"TASK_RESPONSE"});
+    await this.tasks.updateStatus(task.id,"COMPLETED",input.companyId);
+    await this.activity.publish({
+      type:"agent.task_completed",
+      companyId:input.companyId,
+      employeeId:sender.employeeId,
+      agentId:sender.id,
+      message:"Task "+task.id+" completed by agent "+sender.id,
+    });
+    await this.bus.publishResponse({...input,type:"TASK_RESPONSE"});
+    return {task:await this.tasks.getForCompany(task.id,input.companyId),message};
+  }
 }
