@@ -4,8 +4,6 @@ import{Task,TaskStatus}from"../domain";
 import{TaskRepository}from"../repositories/task.repository";
 import{OrganizationService}from"../organization/organization.service";
 import{ProjectService}from"../projects/project.service";
-import{OrganizationService}from"../organization/organization.service";
-import{ProjectService}from"../projects/project.service";
 
 @Injectable()
 export class TaskService{
