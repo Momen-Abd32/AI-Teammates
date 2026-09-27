@@ -8,7 +8,8 @@ import { ConversationService } from "../conversations/conversation.service";
 import { ActivityEventService } from "../activity/activity.event.service";
 import { ToolRegistry } from "../tools/tool.registry";
 import { ToolExecutionService } from "../tools/tool-execution.service";
-import { AgentRunRepository, AgentRunResult } from "./agent-run.repository";\nimport { TaskService } from "../tasks/task.service";
+import { AgentRunRepository, AgentRunResult } from "./agent-run.repository";
+import { TaskService } from "../tasks/task.service";
 
 type ActInput={agentId:string;employeeId:string;companyId:string;message:string;conversationId?:string;taskId?:string};
 
@@ -27,7 +28,8 @@ export class AgentService {
     private activity:ActivityEventService,
     private toolRegistry:ToolRegistry,
     private toolExecutions:ToolExecutionService,
-    private runs:AgentRunRepository,\n    private tasks:TaskService,
+    private runs:AgentRunRepository,
+    private tasks:TaskService,
   ) {}
 
   async getAgent(agentId:string, companyId:string) {
@@ -163,7 +165,8 @@ export class AgentService {
       if(input.taskId) await this.tasks.updateStatus(input.taskId,"BLOCKED",input.companyId);
       return {status:"STEP_LIMIT_REACHED",steps:results.length,results,response:final.response,message:"Agent stopped after the maximum tool steps."};
     } catch(error) {
-      await this.runs.update(runId,{status:"FAILED",currentStep:step,results,completed:true}).catch(()=>undefined);\n      if(input.taskId) await this.tasks.updateStatus(input.taskId,"FAILED",input.companyId).catch(()=>undefined);
+      await this.runs.update(runId,{status:"FAILED",currentStep:step,results,completed:true}).catch(()=>undefined);
+      if(input.taskId) await this.tasks.updateStatus(input.taskId,"FAILED",input.companyId).catch(()=>undefined);
       await this.activity.publish({
         type:"agent.failed",companyId:input.companyId,employeeId:input.employeeId,
         agentId:input.agentId,conversationId:input.conversationId,
