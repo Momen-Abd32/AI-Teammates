@@ -23,7 +23,7 @@ export class DeviceGateway {
     this.sockets.set(device.id,socket);
     socket.send(JSON.stringify({type:"DEVICE_CONNECTED",deviceId:device.id}));
 
-    socket.on("message",async raw=>{
+    socket.on("message",async (raw:Buffer)=>{
       try{
         const body=JSON.parse(String(raw)) as {type?:string;commandId?:string;status?:"COMPLETED"|"FAILED"|"REJECTED";result?:unknown};
         if(body.type!=="device.result" || !body.commandId || !body.status) return;
