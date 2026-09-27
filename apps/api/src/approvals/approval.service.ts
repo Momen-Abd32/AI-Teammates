@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { DatabaseService } from "../infrastructure/database.service";
 import { ActivityEventService } from "../activity/activity.event.service";
 import { OrganizationService } from "../organization/organization.service";
+import { TaskService } from "../tasks/task.service";
 
 export type Approval = {
   id:string; companyId:string; agentId:string; taskId?:string; executionId?:string;
@@ -11,9 +12,13 @@ export type Approval = {
 
 @Injectable()
 export class ApprovalService {
-  constructor(private db:DatabaseService,private activity:ActivityEventService,private org:OrganizationService) {}
+  constructor(private db:DatabaseService,private activity:ActivityEventService,private org:OrganizationService,private tasks:TaskService) {}
 
   async request(input:Omit<Approval,"id"|"status">,requesterEmployeeId?:string) {
+    if(input.taskId){
+      const task=await this.tasks.getForCompany(input.taskId,input.companyId);
+      if(task.assignedAgentId && task.assignedAgentId!==input.agentId) throw new ForbiddenException("Approval task is assigned to a different agent");
+    }
     const agents=await this.org.agents(input.companyId);
     const agent=agents.find(item=>item.id===input.agentId);
     if(!agent) throw new NotFoundException("Agent not found in company");
