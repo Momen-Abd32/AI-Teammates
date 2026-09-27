@@ -13,6 +13,10 @@ export class CollaborationController{
  request(@Body()body:Omit<AgentTaskMessage,"companyId">,@CurrentUser()user:any){
   return this.collaboration.requestTask({...body,companyId:user.companyId},user.employeeId);
  }
+ @Post("tasks/:taskId/respond")
+ respond(@Param("taskId")taskId:string,@Body()body:Omit<AgentTaskMessage,"companyId"|"taskId"|"type">,@CurrentUser()user:any){
+  return this.collaboration.respondTask({...body,taskId,companyId:user.companyId,type:"TASK_RESPONSE"},user.employeeId);
+ }
  @Get("tasks/:taskId")
  async task(@Param("taskId")taskId:string,@CurrentUser()user:any){
   const task=await this.tasks.getForCompany(taskId,user.companyId);
