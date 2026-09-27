@@ -34,6 +34,8 @@ export class ToolExecutionService{
   const execution=await this.executions.get(executionId);
   if(!execution) throw new ForbiddenException("Tool execution not found");
   if(execution.status!=="WAITING_FOR_HUMAN") throw new ForbiddenException("Tool execution is not awaiting approval");
+  const pendingApproval=await this.approvals.find(approvalId,execution.companyId);
+  if(pendingApproval.status!=="PENDING"||pendingApproval.executionId!==executionId) throw new ForbiddenException("Approval mismatch");
   const approval=await this.approvals.decide(approvalId,decidedBy,"REJECTED",execution.companyId);
   if(approval.status!=="REJECTED"||approval.companyId!==execution.companyId||approval.executionId!==executionId) throw new ForbiddenException("Approval mismatch");
   const completed=await this.executions.complete(executionId,"REJECTED",{reason:"Human rejected the requested action"});
@@ -46,6 +48,8 @@ export class ToolExecutionService{
   const execution=await this.executions.get(executionId);
   if(!execution) throw new ForbiddenException("Tool execution not found");
   if(execution.status!=="WAITING_FOR_HUMAN") throw new ForbiddenException("Tool execution is not awaiting approval");
+  const pendingApproval=await this.approvals.find(approvalId,execution.companyId);
+  if(pendingApproval.status!=="PENDING"||pendingApproval.executionId!==executionId) throw new ForbiddenException("Approval mismatch");
   const approval=await this.approvals.decide(approvalId,decidedBy,"APPROVED",execution.companyId);
   if(approval.status!=="APPROVED"||approval.companyId!==execution.companyId||approval.executionId!==executionId) throw new ForbiddenException("Approval mismatch");
   const result=await this.executeTool(execution.action,execution.agentId,execution.arguments);
