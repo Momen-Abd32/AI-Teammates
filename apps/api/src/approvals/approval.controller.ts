@@ -44,6 +44,7 @@ export class ApprovalController{
    "result" in outcome ? outcome.result : outcome.execution?.result ?? {status:"REJECTED"},
    user.companyId,
    user.employeeId,
+   approval.taskId,
   );
 
   if(approval.taskId){
