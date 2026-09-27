@@ -10,9 +10,10 @@ import { ConversationModule } from "../conversations/conversation.module";
 import { ActivityModule } from "../activity/activity.module";
 import { ToolModule } from "../tools/tool.module";
 import { InfrastructureModule } from "../infrastructure/infrastructure.module";
+import { TaskModule } from "../tasks/task.module";
 
 @Module({
-  imports:[InfrastructureModule,SecurityModule,AuditModule,OrganizationModule,MemoryModule,ConversationModule,ActivityModule,ToolModule],
+  imports:[InfrastructureModule,SecurityModule,AuditModule,OrganizationModule,MemoryModule,ConversationModule,ActivityModule,ToolModule,TaskModule],
   controllers:[AgentController],
   providers:[AgentService,AgentRunRepository],
   exports:[AgentService],
