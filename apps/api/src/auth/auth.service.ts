@@ -30,7 +30,9 @@ export class AuthService {
   }
 
   private verify(token:string):Session{
-    const [body,sig]=token.split(".");
+    const parts=token.split(".");
+    if(parts.length!==2) throw new UnauthorizedException("Invalid session");
+    const [body,sig]=parts;
     if(!body||!sig) throw new UnauthorizedException("Invalid session");
     const expected=createHmac("sha256",this.secret()).update(body).digest("base64url");
     if(sig.length!==expected.length || !timingSafeEqual(Buffer.from(sig),Buffer.from(expected))) {
