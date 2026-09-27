@@ -89,6 +89,14 @@ export class AgentService {
   }
 
   async act(input:ActInput) {
+    const agent=await this.getAgent(input.agentId,input.companyId);
+    if(agent.employeeId!==input.employeeId) throw new BadGatewayException("Agent does not belong to employee");
+    if(input.taskId){
+      const task=await this.tasks.getForCompany(input.taskId,input.companyId);
+      if(task.assignedAgentId && task.assignedAgentId!==input.agentId)
+        throw new BadGatewayException("Task is assigned to a different agent");
+      await this.tasks.updateStatus(input.taskId,"IN_PROGRESS",input.companyId);
+    }
     const run=await this.runs.create({...input,maxSteps:5});
     return this.runLoop(run.id);
   }
@@ -98,7 +106,7 @@ export class AgentService {
     if(!run) throw new BadGatewayException("Agent run not found");
     const input:ActInput={
       agentId:run.agentId,employeeId:run.employeeId,companyId:run.companyId,
-      conversationId:run.conversationId ?? undefined,message:run.message,
+      conversationId:run.conversationId ?? undefined,message:run.message,taskId:(run as {taskId?:string}).taskId,
     };
     let results=Array.isArray(run.results) ? run.results as AgentRunResult[] : [];
     let step=Number(run.currentStep ?? 0);
@@ -112,10 +120,12 @@ export class AgentService {
             const final=await this.finalAnswer(input,results);
             const status="COMPLETED";
             await this.runs.update(runId,{status,currentStep:step,results,completed:true});
+            if(input.taskId) await this.tasks.updateStatus(input.taskId,"COMPLETED",input.companyId);
             return {status,steps:results.length,results,response:final.response};
           }
           const result=await this.chat(input);
           await this.runs.update(runId,{status:"COMPLETED",currentStep:step,results,completed:true});
+          if(input.taskId) await this.tasks.updateStatus(input.taskId,"COMPLETED",input.companyId);
           return result;
         }
 
@@ -123,6 +133,7 @@ export class AgentService {
         if(!tool) throw new BadGatewayException("Planner selected an unavailable tool");
         const execution=await this.toolExecutions.request({
           companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId,
+          taskId:input.taskId,
           name:tool.name,arguments:plan.arguments ?? {},
           reason:plan.reason || "Agent requested tool execution",
         });
@@ -130,8 +141,10 @@ export class AgentService {
         if("status" in execution && execution.status==="WAITING_FOR_HUMAN"){
           await this.runs.update(runId,{
             status:"WAITING_FOR_HUMAN",currentStep:step+1,results,
+
             waitingExecutionId:execution.execution!.id,waitingApprovalId:execution.approval!!.id,
           });
+          if(input.taskId) await this.tasks.updateStatus(input.taskId,"WAITING_FOR_HUMAN",input.companyId);
           return {
             status:"WAITING_FOR_HUMAN",runId,step,results,
             execution:execution.execution,approval:execution.approval,
@@ -147,9 +160,10 @@ export class AgentService {
 
       const final=await this.finalAnswer(input,results);
       await this.runs.update(runId,{status:"STEP_LIMIT_REACHED",currentStep:step,results,completed:true});
+      if(input.taskId) await this.tasks.updateStatus(input.taskId,"BLOCKED",input.companyId);
       return {status:"STEP_LIMIT_REACHED",steps:results.length,results,response:final.response,message:"Agent stopped after the maximum tool steps."};
     } catch(error) {
-      await this.runs.update(runId,{status:"FAILED",currentStep:step,results,completed:true}).catch(()=>undefined);\n      if(taskId) await this.tasks.updateStatus(taskId,"FAILED",input.companyId).catch(()=>undefined);
+      await this.runs.update(runId,{status:"FAILED",currentStep:step,results,completed:true}).catch(()=>undefined);\n      if(input.taskId) await this.tasks.updateStatus(input.taskId,"FAILED",input.companyId).catch(()=>undefined);
       await this.activity.publish({
         type:"agent.failed",companyId:input.companyId,employeeId:input.employeeId,
         agentId:input.agentId,conversationId:input.conversationId,
