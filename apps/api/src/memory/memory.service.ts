@@ -53,6 +53,6 @@ export class MemoryService {
     await this.assertOwner(companyId,employeeId,agentId);
     if(!query?.trim()) throw new BadRequestException("Search query is required");
     const embedding=await this.embeddings.embed(query);
-    return this.repo.semanticSearch(agentId,embedding,Math.min(Math.max(limit,1),50),scope);
+    return this.repo.semanticSearch(companyId,agentId,embedding,Math.min(Math.max(limit,1),50),scope);
   }
 }
