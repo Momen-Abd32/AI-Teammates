@@ -1,6 +1,2 @@
-import {Module} from "@nestjs/common";
-import {TaskController} from "./task.controller";
-import {TaskService} from "./task.service";
-import {TaskRepository} from "../repositories/task.repository";
-@Module({controllers:[TaskController],providers:[TaskService,TaskRepository],exports:[TaskService]})
-export class TaskModule {}
+import {Module} from"@nestjs/common";import{TaskController}from"./task.controller";import{TaskService}from"./task.service";import{TaskRepository}from"../repositories/task.repository";import{OrganizationModule}from"../organization/organization.module";import{ProjectModule}from"../projects/project.module";
+@Module({imports:[OrganizationModule,ProjectModule],controllers:[TaskController],providers:[TaskService,TaskRepository],exports:[TaskService]})export class TaskModule{}
