@@ -127,10 +127,10 @@ export class AgentService {
           reason:plan.reason || "Agent requested tool execution",
         });
 
-        if(execution.status==="WAITING_FOR_HUMAN"){
+        if("status" in execution && execution.status==="WAITING_FOR_HUMAN"){
           await this.runs.update(runId,{
             status:"WAITING_FOR_HUMAN",currentStep:step+1,results,
-            waitingExecutionId:execution.execution.id,waitingApprovalId:execution.approval.id,
+            waitingExecutionId:execution.execution!.id,waitingApprovalId:execution.approval!!.id,
           });
           return {
             status:"WAITING_FOR_HUMAN",runId,step,results,
@@ -138,6 +138,7 @@ export class AgentService {
           };
         }
 
+        if(!("result" in execution)) throw new BadGatewayException("Tool execution returned no result");
         results=[...results,{tool:tool.name,result:execution.result}];
         if(Buffer.byteLength(JSON.stringify(results),"utf8")>this.maxResultBytes)
           throw new BadGatewayException("Agent tool result state exceeds the 5 MB limit");
@@ -227,20 +228,22 @@ export class AgentService {
 
     let conversationId=input.conversationId;
     if (conversationId) {
-      await this.conversations.context(conversationId,input.companyId,input.employeeId,12);
+      await this.conversations.context(activeConversationId,input.companyId,input.employeeId,12);
     } else {
       const created=await this.conversations.create(input.companyId,input.employeeId,input.agentId);
       conversationId=created.id;
     }
-    await this.conversations.addMessage(conversationId,input.companyId,input.employeeId,"USER",input.message);
-    const existingMessages=await this.conversations.context(conversationId,input.companyId,input.employeeId,2);
+    const activeConversationId = conversationId;
+    if (!activeConversationId) throw new BadGatewayException("Conversation could not be created");
+    await this.conversations.addMessage(activeConversationId,input.companyId,input.employeeId,"USER",input.message);
+    const existingMessages=await this.conversations.context(activeConversationId,input.companyId,input.employeeId,2);
     if(existingMessages.length===1 && existingMessages[0].sender==="USER"){
       const title=input.message.trim().replace(/\s+/g," ").slice(0,60);
-      await this.conversations.updateTitle(conversationId,input.companyId,input.employeeId,title || "New conversation");
+      await this.conversations.updateTitle(activeConversationId,input.companyId,input.employeeId,title || "New conversation");
     }
     const history=await this.conversations.context(conversationId,input.companyId,input.employeeId,12);
     const memories = await this.memory.semanticSearch(input.companyId,input.employeeId,input.agentId,input.message,8);
-    await this.activity.publish({type:"memory.retrieved",companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId,conversationId,message:`Retrieved ${memories.length} memories`});
+    await this.activity.publish({type:"memory.retrieved",companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId,conversationId:activeConversationId,message:`Retrieved ${memories.length} memories`});
 
     const baseUrl = process.env.AGENT_SERVICE_URL ?? "http://localhost:8000";
     const response = await fetch(baseUrl + "/v1/agents/respond", {
@@ -258,7 +261,7 @@ export class AgentService {
     const result = await response.json() as {response?:string};
     if (result.response) {
       await this.activity.publish({type:"agent.completed",companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId,conversationId,message:"Agent completed"});
-      await this.conversations.addMessage(conversationId,input.companyId,input.employeeId,"AGENT",result.response);
+      await this.conversations.addMessage(activeConversationId,input.companyId,input.employeeId,"AGENT",result.response);
       void this.learnFromConversation(input,result.response);
     }
     return result;
