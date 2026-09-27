@@ -43,10 +43,11 @@ export class ApprovalController{
    ? await this.toolExecutions.approveAndExecute(approval.executionId,id,user.employeeId)
    : await this.toolExecutions.reject(approval.executionId,id,user.employeeId);
 
+  const approvedExecution=body.status==="APPROVED" && outcome.execution?.status==="COMPLETED";
   const resumed=await this.agents.resumeAfterApproval(
    approval.executionId,
    id,
-   body.status==="APPROVED",
+   approvedExecution,
    approval.action,
    "result" in outcome ? outcome.result : outcome.execution?.result ?? {status:"REJECTED"},
    user.companyId,
