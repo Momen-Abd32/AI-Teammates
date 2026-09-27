@@ -1,4 +1,4 @@
-import{Body,Controller,Get,Param,Post}from "@nestjs/common";
+import{Body,Controller,Get,Param,Post,ForbiddenException}from "@nestjs/common";
 import{ModuleRef}from "@nestjs/core";
 import{ToolRegistry}from "./tool.registry";
 import{ToolExecutionService}from "./tool-execution.service";
@@ -44,7 +44,7 @@ export class ToolController{
   @CurrentUser()user:any,
  ){
   const approval=await this.approvals.find(approvalId,user.companyId);
-  if(approval.executionId!==executionId) throw new Error("Approval does not belong to this execution");
+  if(approval.executionId!==executionId) throw new ForbiddenException("Approval does not belong to this execution");
   const result=await this.executions.approveAndExecute(executionId,approvalId,user.employeeId);
   const agentService=this.moduleRef.get(AgentService,{strict:false});
   if(agentService){
