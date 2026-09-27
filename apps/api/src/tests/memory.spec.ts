@@ -7,9 +7,11 @@ describe("memory rules",()=>{
 
   beforeEach(()=>{
     jest.clearAllMocks();
-    org.agents.mockResolvedValue([{id:"a",employeeId:"e"}]);
+    org.agents.mockResolvedValue([{id:"a",companyId:"c",employeeId:"e"}]);
     embeddings.embed.mockResolvedValue(new Array(1536).fill(0));
   });
+
+  it("rejects an agent from another company",async()=>{ org.agents.mockResolvedValue([{id:"a",companyId:"other-company",employeeId:"e"}]); const s=new MemoryService(repo,org,embeddings); await expect(s.create({companyId:"c",agentId:"a",scope:"PRIVATE",content:"work context"},"e")).rejects.toThrow(); });
 
   it("rejects empty memory",async()=>{
     const s=new MemoryService(repo,org,embeddings);
