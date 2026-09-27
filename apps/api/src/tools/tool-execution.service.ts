@@ -51,21 +51,38 @@ export class ToolExecutionService{
   if(execution.status!=="WAITING_FOR_HUMAN") throw new ForbiddenException("Tool execution is not awaiting approval");
   const pendingApproval=await this.approvals.find(approvalId,execution.companyId);
   if(pendingApproval.status!=="PENDING"||pendingApproval.executionId!==executionId) throw new ForbiddenException("Approval mismatch");
-  const approval=await this.approvals.decide(approvalId,decidedBy,"APPROVED",execution.companyId);
-  if(approval.status!=="APPROVED"||approval.companyId!==execution.companyId||approval.executionId!==executionId) throw new ForbiddenException("Approval mismatch");
   const agents=await this.org.agents(execution.companyId);
   const agent=agents.find(item=>item.id===execution.agentId);
   if(!agent) throw new ForbiddenException("Tool execution agent is no longer available");
-  const policy=await this.policy.decide({
-   companyId:execution.companyId,
-   employeeId:agent.employeeId,
-   agentId:execution.agentId,
-   name:execution.action,
-   resource:execution.resource,
-   arguments:execution.arguments,
-   reason:"Revalidated before approved execution",
-  });
-  if(!policy.allowed) throw new ForbiddenException("Tool execution is no longer permitted");
+
+  try {
+   await this.policy.decide({
+    companyId:execution.companyId,
+    employeeId:agent.employeeId,
+    agentId:execution.agentId,
+    name:execution.action,
+    resource:execution.resource,
+    arguments:execution.arguments,
+    reason:"Revalidated before approved execution",
+   });
+  } catch {
+   const approval=await this.approvals.decide(approvalId,decidedBy,"REJECTED",execution.companyId);
+   if(approval.status!=="REJECTED"||approval.companyId!==execution.companyId||approval.executionId!==executionId) throw new ForbiddenException("Approval mismatch");
+   const rejected=await this.executions.complete(executionId,"REJECTED",{reason:"Tool execution is no longer permitted by policy"});
+   if(!rejected) throw new ForbiddenException("Tool execution was already finalized");
+   await this.audit.record({
+    companyId:execution.companyId,
+    actorId:decidedBy,
+    agentId:execution.agentId,
+    action:"TOOL_REJECTED_BY_POLICY",
+    resource:execution.action,
+    metadata:{executionId,approvalId},
+   });
+   return {status:"REJECTED_BY_POLICY" as const,execution:rejected,result:rejected.result};
+  }
+
+  const approval=await this.approvals.decide(approvalId,decidedBy,"APPROVED",execution.companyId);
+  if(approval.status!=="APPROVED"||approval.companyId!==execution.companyId||approval.executionId!==executionId) throw new ForbiddenException("Approval mismatch");
   const result=await this.executeTool(execution.action,execution.agentId,execution.arguments);
   const completed=await this.executions.complete(executionId,"COMPLETED",result);
   if(!completed) throw new ForbiddenException("Tool execution was already finalized");
