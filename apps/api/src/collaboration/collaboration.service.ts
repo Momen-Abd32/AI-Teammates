@@ -21,6 +21,7 @@ export class CollaborationService {
     if(!sender || !receiver) throw new ForbiddenException("Both agents must belong to the company");
     if(!requesterEmployeeId) throw new ForbiddenException("Authenticated employee context is required");
     if(sender.employeeId!==requesterEmployeeId) throw new ForbiddenException("Sender agent does not belong to the authenticated employee");
+    if(task.assignedAgentId && task.assignedAgentId!==receiver.id) throw new ForbiddenException("Task is assigned to a different agent");
 
     const receiverPermissions=Array.isArray(receiver.permissions)?receiver.permissions:[];
     if(!receiverPermissions.includes("agent.collaborate")) throw new ForbiddenException("Receiver agent is not allowed to collaborate");
@@ -30,6 +31,7 @@ export class CollaborationService {
     }
 
     await this.messages.create({...input,type:"TASK_REQUEST"});
+    await this.tasks.updateStatus(task.id,"IN_PROGRESS",input.companyId);
     await this.activity.publish({
       type:"agent.delegated",
       companyId:input.companyId,
@@ -39,6 +41,7 @@ export class CollaborationService {
     });
     return this.bus.publish({...input,type:"TASK_REQUEST"});
   }
+
   async respondTask(input:AgentTaskMessage,requesterEmployeeId?:string){
     if(input.type!=="TASK_RESPONSE") throw new ForbiddenException("Task response message is required");
     if(!input.companyId || !input.taskId || !input.receiverAgentId) throw new ForbiddenException("Company, task and receiver context are required");
@@ -52,6 +55,7 @@ export class CollaborationService {
     if(sender.employeeId!==requesterEmployeeId) throw new ForbiddenException("Responding agent does not belong to the authenticated employee");
     if(sender.id===receiver.id) throw new ForbiddenException("Sender and receiver agents must be different");
     if(task.assignedAgentId!==sender.id) throw new ForbiddenException("Only the assigned agent can complete this task");
+    if(task.status!=="IN_PROGRESS" && task.status!=="WAITING_FOR_AGENT") throw new ForbiddenException("Task is not awaiting agent work");
     if(input.projectId && task.projectId && input.projectId!==task.projectId) throw new ForbiddenException("Project context does not match task");
 
     const message=await this.messages.create({...input,type:"TASK_RESPONSE"});
