@@ -1,19 +1,6 @@
-"use client";
-import {apiFetch} from "../../lib/auth";
-import {useEffect,useState} from "react";
-const API=process.env.NEXT_PUBLIC_API_URL??"http://localhost:3001/api";
-export default function Tasks(){
- const [tasks,setTasks]=useState<any[]>([]); const [title,setTitle]=useState(""); const [busy,setBusy]=useState(false);
- const load=()=>apiFetch("/tasks/company/company-demo").then(r=>r.json()).then(setTasks);
- useEffect(()=>{load().catch(()=>{});},[]);
- async function create(){
-  if(!title.trim()) return; setBusy(true);
-  await apiFetch("/tasks",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({companyId:"company-demo",title,description:"Created from workspace"})});
-  setTitle("");setBusy(false);load();
- }
- return <main style={{maxWidth:1000,margin:"40px auto",fontFamily:"Arial",padding:24}}>
-  <h1>Tasks</h1><p>Work delegated to people and AI teammates.</p>
-  <div style={{display:"flex",gap:8}}><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="New task" style={{flex:1,padding:10}}/><button disabled={busy} onClick={create}>Create</button></div>
-  <section style={{marginTop:24}}>{tasks.map(t=><article key={t.id} style={{padding:14,border:"1px solid #ddd",marginBottom:8}}><b>{t.title}</b><div>{t.status}</div><small>{t.description}</small></article>)}</section>
- </main>;
-}
+"use client";import{apiFetch}from"../../lib/auth";import{useEffect,useState}from"react";
+export default function Tasks(){const[tasks,setTasks]=useState<any[]>([]),[title,setTitle]=useState(""),[busy,setBusy]=useState(false),[error,setError]=useState("");const load=async()=>{const r=await apiFetch("/tasks");if(!r.ok)throw new Error("Failed to load tasks");setTasks(await r.json())};useEffect(()=>{void load().catch(e=>setError(e.message))},[]);
+async function create(){if(!title.trim())return;setBusy(true);setError("");const r=await apiFetch("/tasks",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({title,description:"Created from workspace"})});if(!r.ok)setError("Could not create task");else{setTitle("");await load().catch(e=>setError(e.message))}setBusy(false)}
+return <main style={s.page}><h1>Tasks</h1><p style={s.muted}>Work delegated to people and AI teammates.</p>{error&&<p style={s.error}>{error}</p>}<div style={s.create}><input value={title}onChange={e=>setTitle(e.target.value)}placeholder="New task"style={s.input}/><button disabled={busy}onClick={create}>Create</button></div><section style={{marginTop:24}}>{tasks.map(t=><article key={t.id}style={s.card}><div style={s.row}><b>{t.title}</b><span>{t.status}</span></div><p>{t.description}</p><small>{t.assignedAgentId?"Assigned to AI teammate":"Unassigned"}</small><div style={s.actions}>{t.status!=="IN_PROGRESS"&&<button onClick={()=>status(t.id,"IN_PROGRESS")}>Start</button>}{t.status!=="COMPLETED"&&<button onClick={()=>status(t.id,"COMPLETED")}>Complete</button>}</div></article>)}</section></main>}
+async function status(id:string,v:string){const r=await apiFetch("/tasks/"+id+"/status",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({status:v})});if(!r.ok)throw new Error("Could not update task");location.reload()}
+const s:any={page:{maxWidth:1000,margin:"40px auto",fontFamily:"Arial",padding:24},muted:{color:"#777"},error:{color:"#b00020"},create:{display:"flex",gap:8},input:{flex:1,padding:10,border:"1px solid #ccc",borderRadius:8},card:{padding:16,border:"1px solid #ddd",marginBottom:8,borderRadius:8},row:{display:"flex",justifyContent:"space-between",gap:16},actions:{display:"flex",gap:8,marginTop:12}};
