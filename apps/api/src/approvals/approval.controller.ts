@@ -55,7 +55,8 @@ export class ApprovalController{
   );
 
   if(approval.taskId){
-   const nextStatus=resumed?.status==="COMPLETED"
+   const resumedStatus=(resumed as {status?:string}|null)?.status;
+   const nextStatus=resumedStatus==="COMPLETED"
     ?"COMPLETED"
     :resumed?.status==="REJECTED"
       ?"BLOCKED"
