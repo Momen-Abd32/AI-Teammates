@@ -173,7 +173,7 @@ export class AgentService {
     }
   }
 
-  async resumeAfterApproval(executionId:string, approvalId:string, approved:boolean, action:string, result:unknown, companyId:string, employeeId:string) {
+  async resumeAfterApproval(executionId:string, approvalId:string, approved:boolean, action:string, result:unknown, companyId:string, employeeId:string, taskId?:string) {
     const run=await this.runs.findWaitingByExecution(executionId);
     if(!run) return null;
     if(run.companyId!==companyId || run.employeeId!==employeeId)
@@ -204,7 +204,7 @@ export class AgentService {
     }
 
     await this.runs.update(claimed.id,{status:"RUNNING",results:updated,waitingExecutionId:null,waitingApprovalId:null});
-    return this.runLoop(claimed.id, (claimed as {taskId?:string}).taskId);
+    return this.runLoop(claimed.id, taskId);
   }
 
   private async finalAnswer(input:ActInput, results:Array<{tool:string;result:unknown}>) {
