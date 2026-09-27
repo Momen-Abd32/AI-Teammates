@@ -2,7 +2,7 @@ import { Body, Controller, Post } from "@nestjs/common";
 import { AgentService } from "./agent.service";
 import { CurrentUser } from "../auth/current-user.decorator";
 
-type ChatBody = { agentId:string; message:string; conversationId?:string };
+type ChatBody = { agentId:string; message:string; conversationId?:string; taskId?:string };
 
 @Controller("agents")
 export class AgentController {
@@ -18,8 +18,8 @@ export class AgentController {
   }
 
   @Post("act")
-  act(@Body() body:{agentId:string;message:string;conversationId?:string},@CurrentUser() user:any) {
-    return this.agentService.act({agentId:body.agentId,message:body.message,conversationId:body.conversationId,employeeId:user.employeeId,companyId:user.companyId});
+  act(@Body() body:{agentId:string;message:string;conversationId?:string;taskId?:string},@CurrentUser() user:any) {
+    return this.agentService.act({agentId:body.agentId,message:body.message,conversationId:body.conversationId,taskId:body.taskId,employeeId:user.employeeId,companyId:user.companyId});
   }
 
   @Post("plan")
