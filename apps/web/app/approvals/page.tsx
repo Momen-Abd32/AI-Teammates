@@ -13,7 +13,7 @@ export default function Approvals(){
   const auth=await apiFetch("/auth/validate",{method:"POST"});
   if(!auth.ok){setError("Session expired");setLoading(false);return;}
   const user=await auth.json();
-  const response=await apiFetch("/approvals/company/"+user.companyId);
+  const response=await apiFetch("/approvals");
   if(!response.ok){setError("Failed to load approvals");setLoading(false);return;}
   setItems(await response.json());setLoading(false);
  }
