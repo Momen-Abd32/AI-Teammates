@@ -38,7 +38,8 @@ describe("memory rules",()=>{
     const s=new MemoryService(repo,org,embeddings);
     const result=await s.semanticSearch("c","e","a","how do I structure APIs",5,"PRIVATE");
     expect(embeddings.embed).toHaveBeenCalledWith("how do I structure APIs");
-    expect(repo.semanticSearch).toHaveBeenCalledWith("a",expect.any(Array),5,"PRIVATE");
+    expect(repo.semanticSearch).toHaveBeenCalledWith("c","a",expect.any(Array),5,"PRIVATE");
     expect(result).toEqual([{id:"m",score:0.9}]);
   });
 });
+
