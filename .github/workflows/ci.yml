@@ -31,6 +31,9 @@ jobs:
       - name: Typecheck web
         run: pnpm --filter @ai-teammates/web lint
 
+      - name: Typecheck desktop agent
+        run: pnpm --filter @ai-teammates/desktop-agent build
+
       - name: Build API
         run: pnpm --filter @ai-teammates/api build
 
