@@ -95,7 +95,7 @@ export class DeviceRepository {
         'SELECT id,status,result FROM device_commands WHERE id=$1',
         [id],
       );
-      const row=r.rows[0];
+      const row=r.rows[0] as {id:string;status:string;result:unknown}|undefined;
       if(!row) return null;
       if(row.status==="COMPLETED"||row.status==="FAILED"||row.status==="REJECTED")
         return row;
