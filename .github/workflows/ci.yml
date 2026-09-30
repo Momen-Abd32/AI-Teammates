@@ -46,4 +46,4 @@ jobs:
           python -m compileall apps/sandbox-worker
 
       - name: Validate Docker Compose
-        run: docker compose config
+        run: AUTH_SECRET=ci-validation-secret docker compose config
