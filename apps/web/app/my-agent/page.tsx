@@ -16,6 +16,7 @@ export default function MyAgent(){
   const [loading,setLoading]=useState(true);
   const [sending,setSending]=useState(false);
   const [error,setError]=useState("");
+  const [routerMode,setRouterMode]=useState(true);
 
   const activeAgent=useMemo(()=>agents.find(a=>a.id===active?.agentId),[agents,active]);
 
@@ -76,11 +77,19 @@ export default function MyAgent(){
     const text=input.trim();
     setInput("");setSending(true);setError("");
     setMessages(prev=>[...prev,{id:"local-"+Date.now(),sender:"USER",content:text,createdAt:new Date().toISOString()}]);
-    const r=await apiFetch("/agents/act",{method:"POST",body:JSON.stringify({
-      agentId:activeAgent.id,conversationId:conversation.id,message:text
-    })});
-    if(!r.ok){setError("Agent request failed.");setSending(false);return;}
+    const r=routerMode
+      ? await apiFetch("/orchestrator/route",{method:"POST",body:JSON.stringify({
+          senderAgentId:activeAgent.id,conversationId:conversation.id,title:text.slice(0,80),description:text
+        })})
+      : await apiFetch("/agents/act",{method:"POST",body:JSON.stringify({
+          agentId:activeAgent.id,conversationId:conversation.id,message:text
+        })});
+    if(!r.ok){setError(routerMode?"Could not route task to an AI teammate.":"Agent request failed.");setSending(false);return;}
     const result=await r.json();
+    if(routerMode && result.task){
+      const routedRole=result.task.assignedAgentId;
+      setMessages(prev=>[...prev,{id:"route-"+Date.now(),sender:"SYSTEM",content:`Task routed to ${routedRole}.`,createdAt:new Date().toISOString()}]);
+    }
     if(result.status==="WAITING_FOR_HUMAN"){
       const action=result.approval?.action??result.execution?.action??"sensitive action";
       setMessages(prev=>[...prev,{id:"approval-"+Date.now(),sender:"SYSTEM",content:`Human approval required for: ${action}. Open Approvals to continue.`,createdAt:new Date().toISOString()}]);
@@ -127,7 +136,7 @@ export default function MyAgent(){
     <section style={styles.chat}>
       <header style={styles.header}>
         <div><b>{activeAgent?.role??"Select an AI teammate"}</b><div style={styles.muted}>{active?.title??"Choose one of your agents"}</div></div>
-        <button style={styles.secondary} onClick={()=>newConversation()}>New chat</button>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}><label style={styles.routerToggle}><input type="checkbox" checked={routerMode} onChange={e=>setRouterMode(e.target.checked)}/> Auto-route</label><button style={styles.secondary} onClick={()=>newConversation()}>New chat</button></div>
       </header>
       <div style={styles.messages}>
         {!messages.length&&<div style={styles.empty}><h2>{activeAgent?.role??"Your AI teammates"}</h2><p>{activeAgent?"This specialist runs for you on your connected device and only receives its authorized work context.":"Select an agent to start."}</p></div>}
