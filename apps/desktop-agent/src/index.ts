@@ -3,6 +3,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve, relative, sep } from "node:path";
+import { access, constants, stat } from "node:fs/promises";
 
 const exec = promisify(execFile);
 const DEVICE_WS_URL = process.env.DEVICE_WS_URL ?? "ws://localhost:3001/device";
@@ -51,14 +52,40 @@ function isActionAllowed(agentId: string, action: string) {
   }
 }
 
+
+const MAX_FILE_BYTES = Number(process.env.DEVICE_MAX_FILE_BYTES ?? 2 * 1024 * 1024);
+const MAX_COMMAND_OUTPUT_BYTES = Number(process.env.DEVICE_MAX_COMMAND_OUTPUT_BYTES ?? 1024 * 1024);
+const COMMAND_TIMEOUT_MS = Number(process.env.DEVICE_COMMAND_TIMEOUT_MS ?? 30000);
+const ALLOWED_COMMANDS = new Set((process.env.DEVICE_ALLOWED_COMMANDS ?? "node,npm,pnpm,npx,python,python3,git").split(",").map(x => x.trim()).filter(Boolean));
+
+async function assertFileSize(path: string) {
+  const info = await stat(path);
+  if (info.size > MAX_FILE_BYTES) throw new Error("File exceeds the device-agent size limit");
+}
+
+function parseCommand(command: string) {
+  const parts = command.match(/(?:[^\\s"]+|"[^"]*")+/g)?.map(part => part.replace(/^"(.*)"$/, "$1")) ?? [];
+  if (!parts.length) throw new Error("Command is required");
+  const file = parts[0].split(/[\\\\/]/).pop() ?? "";
+  if (!ALLOWED_COMMANDS.has(file)) throw new Error("Command is not allowed: " + file);
+  if (parts.some(part => [";","&","|","<",">","$"].some(token => part.includes(token)))) throw new Error("Shell operators are not allowed");
+  return { file, argv: parts.slice(1) };
+}
+
 async function execute(agentId: string, action: string, args: any) {
   isActionAllowed(agentId, action);
 
   if (action === "device.files.read") {
-    return { content: await readFile(safePath(String(args.path)), "utf8") };
+    const path = safePath(String(args.path));
+    await access(path, constants.R_OK);
+    await assertFileSize(path);
+    return { content: await readFile(path, "utf8") };
   }
   if (action === "device.files.write") {
-    await writeFile(safePath(String(args.path)), String(args.content), "utf8");
+    const path = safePath(String(args.path));
+    const content = String(args.content ?? "");
+    if (Buffer.byteLength(content, "utf8") > MAX_FILE_BYTES) throw new Error("File exceeds the device-agent size limit");
+    await writeFile(path, content, "utf8");
     return { ok: true };
   }
   if (action === "device.screenshot") {
