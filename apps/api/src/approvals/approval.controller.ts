@@ -12,7 +12,7 @@ export class ApprovalController{
  @Get()list(@CurrentUser()user:any){return this.approvals.list(user.companyId,user.employeeId,user.role);}
  @Post()request(@Body()body:{agentId:string;taskId?:string;action:string;reason:string},@CurrentUser()user:any){return this.approvals.request({...body,companyId:user.companyId},user.employeeId);}
  @Patch(":id")
- async decide(@Param(":id")id:string,@Body()body:{status:"APPROVED"|"REJECTED"},@CurrentUser()user:any){
+ async decide(@Param("id")id:string,@Body()body:{status:"APPROVED"|"REJECTED"},@CurrentUser()user:any){
   if(body.status!=="APPROVED"&&body.status!=="REJECTED")throw new BadRequestException("Approval status must be APPROVED or REJECTED");
   const approval=await this.approvals.find(id,user.companyId);
   if(approval.status!=="PENDING")return approval;
