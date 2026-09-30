@@ -25,10 +25,14 @@ export class DeviceGateway {
 
     socket.on("message",async (raw:Buffer)=>{
       try{
-        const body=JSON.parse(String(raw)) as {type?:string;commandId?:string;status?:"COMPLETED"|"FAILED"|"REJECTED";result?:unknown};
+        const body=JSON.parse(String(raw)) as {type?:string;commandId?:string;agentId?:string;status?:"COMPLETED"|"FAILED"|"REJECTED";result?:unknown};
         if(body.type!=="device.result" || !body.commandId || !body.status) return;
         const command=await this.repo.commandForDevice(body.commandId,device.id);
         if(!command) return;
+        if(body.agentId && body.agentId!==command.agentId) {
+          this.logger.warn("Ignoring device result with mismatched agent identity");
+          return;
+        }
         await this.repo.completeCommand(body.commandId,body.status,body.result);
       }catch(error){
         this.logger.warn("Invalid device message",error instanceof Error?error.message:String(error));
@@ -41,7 +45,10 @@ export class DeviceGateway {
     const socket=this.sockets.get(command.deviceId);
     if(!socket || socket.readyState!==1) throw new Error("Device is offline");
     await this.repo.startCommand(command.id);
-    socket.send(JSON.stringify({type:"DEVICE_COMMAND",command:{id:command.id,action:command.action,arguments:command.arguments}}));
+    socket.send(JSON.stringify({
+      type:"DEVICE_COMMAND",
+      command:{id:command.id,agentId:command.agentId,action:command.action,arguments:command.arguments},
+    }));
   }
 
   disconnect(deviceId:string){this.sockets.get(deviceId)?.close(4000,"Device revoked");}
