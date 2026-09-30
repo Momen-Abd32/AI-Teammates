@@ -64,7 +64,7 @@ export class DeviceService {
     return null;
   }
 
-  async waitForCommand(id:string,timeoutMs=30000){ return this.repo.waitForCommand(id,timeoutMs); }
+  async waitForCommand(input:{companyId:string;employeeId:string;deviceId:string;commandId:string},timeoutMs=30000){ const command=await this.repo.commandForDevice(input.commandId,input.deviceId); if(!command)return null; return this.repo.waitForCommand(input.commandId,timeoutMs); }
 
   async requestCommand(input:{companyId:string;employeeId:string;deviceId:string;agentId:string;action:string;arguments?:Record<string,unknown>}) {
     const device=await this.repo.findForEmployee(input.deviceId,input.companyId,input.employeeId);
