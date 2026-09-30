@@ -20,7 +20,8 @@ Set `DEVICE_AGENT_POLICIES` to JSON when different agents need different local c
 {
   "coding-agent-id": {
     "enabled": true,
-    "allowedActions": ["device.files.read", "device.files.write", "device.terminal.execute"]
+    "allowedActions": ["device.files.read", "device.files.write", "device.terminal.execute"],
+    "allowedCommands": ["git", "npm", "pnpm"]
   },
   "testing-agent-id": {
     "enabled": true,
@@ -41,3 +42,12 @@ The global `DEVICE_ALLOWED_ACTIONS` list remains the upper bound. An agent canno
 6. The desktop runtime validates the agent identity and executes only actions allowed for that agent.
 
 This keeps the physical device shared while preserving agent-level authorization and memory boundaries.
+
+
+## Terminal safety boundary
+
+The desktop runtime applies two command allowlists: the global `DEVICE_ALLOWED_COMMANDS` list and an optional agent-specific `allowedCommands` list. The agent-specific list can only narrow the global list.
+
+Terminal execution is performed without a shell, with the working directory fixed to the configured workspace, a configurable timeout, and output/file size limits. Shell chaining and redirection operators are rejected.
+
+These controls are application-level boundaries; they are not an OS/container sandbox.
