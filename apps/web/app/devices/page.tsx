@@ -155,7 +155,8 @@ export default function DevicesPage(){
                 <div style={styles.actions}>
                   <div style={{display:"flex",gap:8}}><button onClick={()=>binding?unbind(agent.id):bind(agent.id)} disabled={busy===agent.id||activeDevice.status==="REVOKED"} style={binding?styles.secondary:styles.primary}>
                     {busy===agent.id?"Working…":binding?"Unbind":"Bind to device"}
-                  </button>
+                  </button>{binding&&<button onClick={()=>updateBinding(agent.id)} disabled={busy===agent.id||activeDevice.status==="REVOKED"} style={styles.secondary}>Apply permissions</button>}
+                  </div>
                 </div>
               </div>
             })}
@@ -183,7 +184,7 @@ const styles:any={
   grid:{display:"grid",gridTemplateColumns:"minmax(280px,360px) 1fr",gap:20,maxWidth:1100},
   panel:{background:"#fff",border:"1px solid #ddd",borderRadius:14,padding:20},h2:{margin:"0 0 5px",fontSize:20},h3:{margin:"0 0 10px",fontSize:14},muted:{fontSize:12,color:"#777",margin:"4px 0"},
   device:{width:"100%",display:"flex",gap:10,alignItems:"center",border:"1px solid #eee",background:"#fafafa",borderRadius:10,padding:12,marginBottom:8,cursor:"pointer"},
-  selected:{borderColor:"#171717",background:"#f0f0f0"},deviceIcon:{fontSize:18},online::{fontSize:10},offline:{fontSize:10,color:"#999"},device: {width:"100%",display:"flex",gap:10,alignItems:"center",border:"1px solid #eee",background:"#fafafa",borderRadius:10,padding:12,marginBottom:8,cursor:"pointer"},
+  selected:{borderColor:"#171717",background:"#f0f0f0"},deviceIcon:{fontSize:18},online:{fontSize:10},offline:{fontSize:10,color:"#999"},
   register:{borderTop:"1px solid #eee",marginTop:18,paddingTop:18},input:{width:"100%",boxSizing:"border-box",padding:10,border:"1px solid #ccc",borderRadius:8,marginBottom:8,background:"#fff"},
   primary:{border:0,borderRadius:8,padding:"10px 14px",background:"#171717",color:"#fff",cursor:"pointer",fontWeight:700},secondary:{border:"1px solid #ccc",borderRadius:8,padding:"9px 14px",background:"#fff",cursor:"pointer"},danger:{border:"1px solid #b00020",color:"#b00020",background:"#fff",borderRadius:8,padding:"9px 14px",cursor:"pointer"},
   row:{display:"flex",justifyContent:"space-between",alignItems:"center"},agents:{display:"grid",gap:10,marginTop:18},agent:{border:"1px solid #e5e5e5",borderRadius:10,padding:14},agentTop:{display:"flex",justifyContent:"space-between",alignItems:"center"},badge:{fontSize:10,fontWeight:700,padding:"4px 7px",borderRadius:999,background:"#e8f5e9"},badgeOff:{fontSize:10,fontWeight:700,padding:"4px 7px",borderRadius:999,background:"#eee",color:"#777"},currentPerms:{fontSize:11,color:"#666",marginTop:9},actions:{marginTop:10},permissions:{borderTop:"1px solid #eee",marginTop:22,paddingTop:18},check:{display:"flex",gap:10,alignItems:"flex-start",padding:"9px 0",borderBottom:"1px solid #f0f0f0"},empty:{padding:30,textAlign:"center",color:"#777"},error:{background:"#fff0f0",color:"#a00020",padding:12,borderRadius:9,marginBottom:15},token:{background:"#f1f7ff",border:"1px solid #b7d4ff",padding:14,borderRadius:10,marginBottom:15,display:"grid",gap:7}
