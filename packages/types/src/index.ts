@@ -4,6 +4,7 @@ export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 export interface TenantContext { companyId: string; employeeId: string; agentId?: string; projectId?: string; }
 export interface Agent { id:string; companyId:string; employeeId:string; role:string; permissions:string[]; systemInstructions?:string; }
+export interface AgentProfile { id:string; role:string; permissions:string[]; enabled?:boolean; }
 export interface Task { id:string; companyId:string; projectId?:string; title:string; description:string; status:TaskStatus; assignedAgentId?:string; }
 export interface Memory { id:string; companyId:string; agentId:string; scope:MemoryScope; content:string; score?:number; }
 export interface Approval { id:string; companyId:string; agentId:string; taskId?:string; action:string; reason:string; status:ApprovalStatus; decidedBy?:string; }
