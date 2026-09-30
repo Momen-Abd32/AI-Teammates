@@ -10,7 +10,7 @@ const DEVICE_WS_URL = process.env.DEVICE_WS_URL ?? "ws://localhost:3001/device";
 const DEVICE_TOKEN = process.env.DEVICE_TOKEN;
 const WORKSPACE = resolve(process.env.DEVICE_WORKSPACE ?? process.cwd());
 
-if (!DEVICE_TOKEN) throw new Error("DEVICE_TOKEN is required");
+if (!DEVICE_TOKEN) throw new Error("DEVICE_TOKEN is required");\nconst DEVICE_AUTH_TOKEN = DEVICE_TOKEN;
 
 type AgentPolicy = { enabled?: boolean; allowedActions?: string[]; allowedCommands?: string[] };
 type AgentPolicies = Record<string, AgentPolicy>;
@@ -106,7 +106,7 @@ async function execute(agentId: string, action: string, args: any) {
 }
 
 function connect() {
-  const ws = new WebSocket(DEVICE_WS_URL + "?token=" + encodeURIComponent(DEVICE_TOKEN));
+  const ws = new WebSocket(DEVICE_WS_URL + "?token=" + encodeURIComponent(DEVICE_AUTH_TOKEN));
 
   ws.on("open", () => console.log("AI Teammates device connected"));
   ws.on("message", async raw => {
