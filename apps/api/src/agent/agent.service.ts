@@ -100,16 +100,16 @@ export class AgentService {
       await this.tasks.updateStatus(input.taskId,"IN_PROGRESS",input.companyId);
     }
     const run=await this.runs.create({...input,maxSteps:5});
-    return this.runLoop(run.id,input.taskId);
+    return this.runLoop(run.id,input.taskId,input.finalizeTask !== false);
   }
 
-  private async runLoop(runId:string, taskId?:string) {
+  private async runLoop(runId:string, taskId?:string, finalizeTask=true) {
     const run=await this.runs.get(runId);
     if(!run) throw new BadGatewayException("Agent run not found");
     const input:ActInput={
       agentId:run.agentId,employeeId:run.employeeId,companyId:run.companyId,
       conversationId:run.conversationId ?? undefined,message:run.message,taskId,
-      finalizeTask:run.finalizeTask !== false,
+      finalizeTask,
     };
     let results=Array.isArray(run.results) ? run.results as AgentRunResult[] : [];
     let step=Number(run.currentStep ?? 0);
