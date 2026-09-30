@@ -16,7 +16,7 @@ export class CollaborationService {
   const task=await this.tasks.getForCompany(input.taskId,input.companyId);
   const agents=await this.org.agents(input.companyId);
   const sender=agents.find(agent=>agent.id===input.senderAgentId),receiver=agents.find(agent=>agent.id===input.receiverAgentId);
-  if(!sender||!receiver)throw new ForbiddenException("Both agents must belong to the company");
+  if(!sender||!receiver||sender.companyId!==input.companyId||receiver.companyId!==input.companyId)throw new ForbiddenException("Both agents must belong to the company");
   if(!requesterEmployeeId)throw new ForbiddenException("Authenticated employee context is required");
   if(sender.employeeId!==requesterEmployeeId)throw new ForbiddenException("Sender agent does not belong to the authenticated employee");
   if(task.assignedAgentId&&task.assignedAgentId!==receiver.id)throw new ForbiddenException("Task is assigned to a different agent");
