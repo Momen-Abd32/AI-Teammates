@@ -128,7 +128,7 @@ export class AgentService {
           }
           const result=await this.chat(input);
           await this.runs.update(runId,{status:"COMPLETED",currentStep:step,results,completed:true});
-          if(input.taskId) await this.tasks.updateStatus(input.taskId,"COMPLETED",input.companyId);
+          if(input.taskId && input.finalizeTask !== false) await this.tasks.updateStatus(input.taskId,"COMPLETED",input.companyId);
           return result;
         }
 
