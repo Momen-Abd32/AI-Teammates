@@ -236,6 +236,38 @@ export class AgentService {
     return response.json() as Promise<{response?:string;status?:string}>;
   }
 
+  async receiveDelegatedResult(input:{agentId:string;employeeId:string;companyId:string;conversationId:string;taskId:string;response:string;status:string}) {
+    const agent=await this.getAgent(input.agentId,input.companyId);
+    if(agent.employeeId!==input.employeeId) throw new BadGatewayException("Agent does not belong to employee");
+    this.permissions.assertWithPermissions(
+      {companyId:input.companyId,employeeId:input.employeeId,agentId:input.agentId},
+      "agent.chat",agent.permissions,
+    );
+    const history=await this.conversations.context(input.conversationId,input.companyId,input.employeeId,12);
+    const message="Delegated task result (task "+input.taskId+", status "+input.status+"):\n"+input.response;
+    await this.conversations.addMessage(input.conversationId,input.companyId,input.employeeId,"SYSTEM",message);
+    const memories=await this.memory.semanticSearch(input.companyId,input.employeeId,input.agentId,message,8);
+    const baseUrl=process.env.AGENT_SERVICE_URL ?? "http://localhost:8000";
+    const response=await fetch(baseUrl+"/v1/agents/respond",{
+      method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({
+        agent_id:agent.id,employee_id:agent.employeeId,company_id:input.companyId,
+        role:agent.role,permissions:agent.permissions ?? [],instructions:agent.systemInstructions ?? "",
+        message:"A delegated agent returned this result. Process it in the context of your current work and respond with the next useful action or conclusion.\n\n"+message,
+        memories:memories.map(memory=>({scope:memory.scope,content:memory.content,score:memory.score})),
+        conversationHistory:history.map(item=>({sender:item.sender,content:item.content})),
+      }),
+      signal:AbortSignal.timeout(30000),
+    });
+    if(!response.ok) throw new BadGatewayException("Agent service request failed while processing delegated result");
+    const result=await response.json() as {response?:string};
+    if(result.response) {
+      await this.conversations.addMessage(input.conversationId,input.companyId,input.employeeId,"AGENT",result.response);
+      void this.learnFromConversation({agentId:input.agentId,employeeId:input.employeeId,companyId:input.companyId,message},result.response);
+    }
+    return {taskId:input.taskId,status:input.status,response:result.response ?? ""};
+  }
+
   async chat(input:{agentId:string;employeeId:string;companyId:string;conversationId?:string;role?:string;message:string}) {
     const agent = await this.getAgent(input.agentId,input.companyId);
     if(agent.employeeId !== input.employeeId) throw new BadGatewayException("Agent does not belong to employee");
