@@ -64,7 +64,7 @@ export class DeviceService {
     return null;
   }
 
-  async requestCommand(input:{companyId:string;employeeId:string;deviceId:string;agentId:string;action:string;arguments?:Record<string,unknown>}) {
+  async waitForCommand(id:string,timeoutMs=30000){ return this.repo.waitForCommand(id,timeoutMs); }\n\n  async requestCommand(input:{companyId:string;employeeId:string;deviceId:string;agentId:string;action:string;arguments?:Record<string,unknown>}) {
     const device=await this.repo.findForEmployee(input.deviceId,input.companyId,input.employeeId);
     if(!device || device.status==="REVOKED") throw new ForbiddenException("Device is unavailable");
     const agents=await this.org.agents(input.companyId);
