@@ -97,8 +97,10 @@ export class ToolExecutionService{
    const agents=await this.org.agents(resolvedCompanyId);
    const agent=agents.find(item=>item.id===agentId);
    if(!agent) throw new ForbiddenException("Device tool agent is unavailable");
-   const deviceId=String(args.deviceId??"");
-   if(!deviceId) throw new ForbiddenException("deviceId is required");
+   const requestedDeviceId=String(args.deviceId??"");
+   const resolvedDevice=await this.devices.resolveAgentDevice({companyId:agent.companyId,employeeId:agent.employeeId,agentId});
+   const deviceId=requestedDeviceId||resolvedDevice?.id||"";
+   if(!deviceId) throw new ForbiddenException("No device is bound to this agent");
    const command=await this.devices.requestCommand({
     companyId:agent.companyId,employeeId:agent.employeeId,deviceId,agentId,action:name,
     arguments:Object.fromEntries(Object.entries(args).filter(([key])=>key!=="deviceId"&&key!=="companyId")),
