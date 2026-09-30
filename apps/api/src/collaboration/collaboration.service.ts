@@ -53,11 +53,25 @@ export class CollaborationService {
   const request=messages.find(message=>message.type==="TASK_REQUEST");
   if(!request)throw new ForbiddenException("Delegated task request message is missing");
   if(messages.some(message=>message.type==="TASK_RESPONSE"))return{task:await this.tasks.getForCompany(task.id,input.companyId)};
-  if(request.payload?.conversationId===undefined&&request.payload?.conversationId!==null)throw new ForbiddenException("Delegated task conversation context is missing");
-  const responseMessage=await this.messages.create({taskId:task.id,companyId:input.companyId,senderAgentId:request.receiverAgentId,receiverAgentId:request.senderAgentId,type:"TASK_RESPONSE",payload:{response:input.response,status:input.status}});
-  await this.tasks.updateStatus(task.id,"COMPLETED",input.companyId);
   const conversationId=typeof request.payload?.conversationId==="string"?request.payload.conversationId:null;
-  if(conversationId)await this.agents.receiveDelegatedResult({agentId:request.senderAgentId,employeeId:input.employeeId,companyId:input.companyId,conversationId,taskId:task.id,response:input.response,status:input.status});
-  return{task:await this.tasks.getForCompany(task.id,input.companyId),message:responseMessage,conversationId};
+  const result=await this.respondTask({
+    taskId:task.id,
+    companyId:input.companyId,
+    senderAgentId:request.receiverAgentId,
+    receiverAgentId:request.senderAgentId,
+    projectId:task.projectId??request.projectId,
+    type:"TASK_RESPONSE",
+    payload:{response:input.response,status:input.status},
+  },input.employeeId);
+  if(conversationId)await this.agents.receiveDelegatedResult({
+    agentId:request.senderAgentId,
+    employeeId:input.employeeId,
+    companyId:input.companyId,
+    conversationId,
+    taskId:task.id,
+    response:input.response,
+    status:input.status,
+  });
+  return{...result,conversationId};
  }
 }
