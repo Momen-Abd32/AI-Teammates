@@ -92,6 +92,24 @@ export class ToolExecutionService{
  }
 
  private async executeTool(name:string,agentId:string,args:Record<string,unknown>){
+  if(name.startsWith("device.")){
+   const companyId=String(args.companyId??"");
+   const agents=await this.org.agents(companyId);
+   const agent=agents.find(item=>item.id===agentId);
+   if(!agent) throw new ForbiddenException("Device tool agent is unavailable");
+   const deviceId=String(args.deviceId??"");
+   if(!deviceId) throw new ForbiddenException("deviceId is required");
+   const command=await this.devices.requestCommand({
+    companyId:agent.companyId,employeeId:agent.employeeId,deviceId,agentId,action:name,
+    arguments:Object.fromEntries(Object.entries(args).filter(([key])=>key!=="deviceId"&&key!=="companyId")),
+   });
+   const completed=await this.devices.waitForCommand({
+    companyId:agent.companyId,employeeId:agent.employeeId,deviceId,commandId:command.id,
+   },30000);
+   if(!completed) return {commandId:command.id,deviceId,agentId,action:name,status:"TIMEOUT"};
+   return {commandId:completed.id,deviceId,agentId,action:name,status:completed.status,result:completed.result};
+  }
+
   if(name==="terminal.execute"){
    const language=String(args.language??"python");
    const code=String(args.code??"");
