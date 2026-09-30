@@ -48,6 +48,16 @@ export class DeviceService {
     return {ok:true};
   }
 
+  async resolveAgentDevice(input:{companyId:string;employeeId:string;agentId:string}){
+    const devices=await this.repo.listForEmployee(input.companyId,input.employeeId);
+    for(const device of devices){
+      if(device.status==="REVOKED")continue;
+      const binding=await this.repo.binding(device.id,input.agentId);
+      if(binding?.active)return device;
+    }
+    return null;
+  }
+
   async requestCommand(input:{companyId:string;employeeId:string;deviceId:string;agentId:string;action:string;arguments?:Record<string,unknown>}) {
     const device=await this.repo.findForEmployee(input.deviceId,input.companyId,input.employeeId);
     if(!device || device.status==="REVOKED") throw new ForbiddenException("Device is unavailable");
