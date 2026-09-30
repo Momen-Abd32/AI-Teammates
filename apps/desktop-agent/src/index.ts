@@ -67,7 +67,8 @@ function parseCommand(command: string, policy?: AgentPolicy) {
   const parts = command.match(/(?:[^\\s"]+|"[^"]*")+/g)?.map(part => part.replace(/^"(.*)"$/, "$1")) ?? [];
   if (!parts.length) throw new Error("Command is required");
   const file = parts[0].split(/[\\\\/]/).pop() ?? "";
-  if (!ALLOWED_COMMANDS.has(file)) throw new Error("Command is not allowed by the device policy: " + file);\n  if (Array.isArray(policy?.allowedCommands) && !policy.allowedCommands.includes(file)) throw new Error("Command is not allowed for this agent: " + file);
+  if (!ALLOWED_COMMANDS.has(file)) throw new Error("Command is not allowed by the device policy: " + file);
+  if (Array.isArray(policy?.allowedCommands) && !policy.allowedCommands.includes(file)) throw new Error("Command is not allowed for this agent: " + file);
   if (parts.some(part => [";","&","|","<",">","$"].some(token => part.includes(token)))) throw new Error("Shell operators are not allowed");
   return { file, argv: parts.slice(1) };
 }
