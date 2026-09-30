@@ -12,7 +12,7 @@ const WORKSPACE = resolve(process.env.DEVICE_WORKSPACE ?? process.cwd());
 
 if (!DEVICE_TOKEN) throw new Error("DEVICE_TOKEN is required");
 
-type AgentPolicy = { enabled?: boolean; allowedActions?: string[] };
+type AgentPolicy = { enabled?: boolean; allowedActions?: string[]; allowedCommands?: string[] };
 type AgentPolicies = Record<string, AgentPolicy>;
 
 function loadAgentPolicies(): AgentPolicies {
@@ -63,11 +63,11 @@ async function assertFileSize(path: string) {
   if (info.size > MAX_FILE_BYTES) throw new Error("File exceeds the device-agent size limit");
 }
 
-function parseCommand(command: string) {
+function parseCommand(command: string, policy?: AgentPolicy) {
   const parts = command.match(/(?:[^\\s"]+|"[^"]*")+/g)?.map(part => part.replace(/^"(.*)"$/, "$1")) ?? [];
   if (!parts.length) throw new Error("Command is required");
   const file = parts[0].split(/[\\\\/]/).pop() ?? "";
-  if (!ALLOWED_COMMANDS.has(file)) throw new Error("Command is not allowed: " + file);
+  if (!ALLOWED_COMMANDS.has(file)) throw new Error("Command is not allowed by the device policy: " + file);\n  if (Array.isArray(policy?.allowedCommands) && !policy.allowedCommands.includes(file)) throw new Error("Command is not allowed for this agent: " + file);
   if (parts.some(part => [";","&","|","<",">","$"].some(token => part.includes(token)))) throw new Error("Shell operators are not allowed");
   return { file, argv: parts.slice(1) };
 }
