@@ -20,7 +20,13 @@ export class DeviceService {
     return {...device,deviceToken:token};
   }
 
-  list(companyId:string,employeeId:string){return this.repo.listForEmployee(companyId,employeeId);}
+  async list(companyId:string,employeeId:string){
+    const devices=await this.repo.listForEmployee(companyId,employeeId);
+    return Promise.all(devices.map(async device=>({
+      ...device,
+      bindings:await this.repo.bindingsForDevice(device.id),
+    })));
+  }
 
   async revoke(id:string,companyId:string,employeeId:string){
     const device=await this.repo.revoke(id,companyId,employeeId);
