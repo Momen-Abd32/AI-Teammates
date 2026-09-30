@@ -10,7 +10,8 @@ const DEVICE_WS_URL = process.env.DEVICE_WS_URL ?? "ws://localhost:3001/device";
 const DEVICE_TOKEN = process.env.DEVICE_TOKEN;
 const WORKSPACE = resolve(process.env.DEVICE_WORKSPACE ?? process.cwd());
 
-if (!DEVICE_TOKEN) throw new Error("DEVICE_TOKEN is required");\nconst DEVICE_AUTH_TOKEN = DEVICE_TOKEN;
+if (!DEVICE_TOKEN) throw new Error("DEVICE_TOKEN is required");
+const DEVICE_AUTH_TOKEN = DEVICE_TOKEN;
 
 type AgentPolicy = { enabled?: boolean; allowedActions?: string[]; allowedCommands?: string[] };
 type AgentPolicies = Record<string, AgentPolicy>;
