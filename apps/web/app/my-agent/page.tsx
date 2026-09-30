@@ -107,7 +107,7 @@ export default function MyAgent(){
         {agents.map(agent=><button key={agent.id} onClick={()=>selectAgent(agent.id)}
           style={{...styles.agentCard,...(activeAgent?.id===agent.id?styles.agentActive:{})}}>
           <span style={styles.agentDot}>●</span>
-          <span><b>{agent.role}</b><small>{agent.permissions?.length??0} permissions</small></span>
+          <span><b>{agent.role}</b><small style={styles.agentCardSmall}>{agent.permissions?.length??0} permissions</small></span>
         </button>)}
         {!agents.length&&<div style={styles.muted}>No agents assigned yet.</div>}
       </div>
@@ -149,7 +149,7 @@ brand:{fontSize:20,fontWeight:700,marginBottom:10},muted:{fontSize:12,color:"#77
 section:{fontSize:11,fontWeight:700,color:"#888",margin:"18px 4px 10px"},agentList:{display:"grid",gap:6,maxHeight:230,overflowY:"auto"},
 agentCard:{width:"100%",textAlign:"left",border:"1px solid #eee",background:"#fafafa",padding:"10px 12px",borderRadius:9,cursor:"pointer",display:"flex",gap:9,alignItems:"flex-start"},
 agentActive:{background:"#eee",borderColor:"#ccc"},agentDot:{fontSize:10,marginTop:3},
-agentCardSpan:{display:"flex",flexDirection:"column"},agentCard small:{display:"block",fontSize:10,color:"#888",marginTop:3},
+agentCardSpan:{display:"flex",flexDirection:"column"},agentCardSmall:{display:"block",fontSize:10,color:"#888",marginTop:3},
 newButton:{border:"0",borderRadius:10,padding:"12px 14px",background:"#171717",color:"#fff",cursor:"pointer",fontWeight:700,marginTop:12},
 list:{overflowY:"auto",flex:1},conversation:{width:"100%",textAlign:"left",border:"0",background:"transparent",padding:"12px",borderRadius:9,cursor:"pointer",display:"flex",justifyContent:"space-between",marginBottom:3},
 active:{background:"#eee"},user:{borderTop:"1px solid #eee",paddingTop:14,fontSize:13},chat:{flex:1,display:"flex",flexDirection:"column",minWidth:0},
