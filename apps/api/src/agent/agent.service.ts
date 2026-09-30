@@ -99,17 +99,19 @@ export class AgentService {
         throw new BadGatewayException("Task is assigned to a different agent");
       await this.tasks.updateStatus(input.taskId,"IN_PROGRESS",input.companyId);
     }
-    const run=await this.runs.create({...input,maxSteps:5});
-    return this.runLoop(run.id,input.taskId,input.finalizeTask !== false);
+    const run=await this.runs.create({...input,maxSteps:5,taskId:input.taskId,finalizeTask:input.finalizeTask !== false});
+    return this.runLoop(run.id);
   }
 
-  private async runLoop(runId:string, taskId?:string, finalizeTask=true) {
+  private async runLoop(runId:string, taskId?:string, finalizeTask?:boolean) {
     const run=await this.runs.get(runId);
     if(!run) throw new BadGatewayException("Agent run not found");
+    const resolvedTaskId=taskId ?? run.taskId ?? undefined;
+    const resolvedFinalizeTask=finalizeTask ?? run.finalizeTask !== false;
     const input:ActInput={
       agentId:run.agentId,employeeId:run.employeeId,companyId:run.companyId,
-      conversationId:run.conversationId ?? undefined,message:run.message,taskId,
-      finalizeTask,
+      conversationId:run.conversationId ?? undefined,message:run.message,taskId:resolvedTaskId,
+      finalizeTask:resolvedFinalizeTask,
     };
     let results=Array.isArray(run.results) ? run.results as AgentRunResult[] : [];
     let step=Number(run.currentStep ?? 0);
@@ -208,7 +210,7 @@ export class AgentService {
     }
 
     await this.runs.update(claimed.id,{status:"RUNNING",results:updated,waitingExecutionId:null,waitingApprovalId:null});
-    return this.runLoop(claimed.id, taskId);
+    return this.runLoop(claimed.id);
   }
 
   private async finalAnswer(input:ActInput, results:Array<{tool:string;result:unknown}>) {
