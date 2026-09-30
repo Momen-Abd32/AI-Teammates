@@ -80,6 +80,22 @@ export class DeviceRepository {
     await this.db.query("UPDATE device_commands SET status='RUNNING',started_at=now() WHERE id=$1 AND status='QUEUED'",[id]);
   }
 
+  async waitForCommand(id:string,timeoutMs=30000,intervalMs=250): Promise<{id:string;status:string;result:unknown}|null> {
+    const deadline=Date.now()+timeoutMs;
+    while(Date.now()<deadline){
+      const r=await this.db.query(
+        'SELECT id,status,result FROM device_commands WHERE id=$1',
+        [id],
+      );
+      const row=r.rows[0];
+      if(!row) return null;
+      if(row.status==="COMPLETED"||row.status==="FAILED"||row.status==="REJECTED")
+        return row;
+      await new Promise(resolve=>setTimeout(resolve,intervalMs));
+    }
+    return null;
+  }
+
   async completeCommand(id:string,status:string,result:unknown) {
     await this.db.query("UPDATE device_commands SET status=$2,result=$3::jsonb,completed_at=now() WHERE id=$1",[id,status,JSON.stringify(result ?? null)]);
   }
