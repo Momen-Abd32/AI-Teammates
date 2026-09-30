@@ -13,7 +13,7 @@ import{ForbiddenException,Injectable}from"@nestjs/common";import{OrganizationSer
    {keys:["monitor","log","health","alert","performance"],roles:["monitoring","monitor","ops"]},
    {keys:["email","message","communicate","reply","communication"],roles:["communication","communications"]},
   ];
-  const candidates=agents.filter(a=>a.id!==sender.id&&Array.isArray(a.permissions)&&a.permissions.includes("agent.collaborate"));
+  const candidates=agents.filter(a=>a.id!==sender.id&&a.employeeId===input.employeeId&&Array.isArray(a.permissions)&&a.permissions.includes("agent.collaborate"));
   if(!candidates.length)throw new ForbiddenException("No collaborating agent is available for this employee");
   const scored=candidates.map(agent=>{
    const profile=((agent.role??"")+" "+(agent.systemInstructions??"")).toLowerCase();
