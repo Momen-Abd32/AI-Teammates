@@ -58,6 +58,14 @@ export class DeviceRepository {
     await this.db.query("UPDATE device_agent_bindings SET active=false WHERE device_id=$1 AND agent_id=$2",[deviceId,agentId]);
   }
 
+  async bindingsForDevice(deviceId:string) {
+    const r=await this.db.query(
+      'SELECT device_id AS "deviceId",agent_id AS "agentId",permissions,active FROM device_agent_bindings WHERE device_id=$1 ORDER BY agent_id',
+      [deviceId],
+    );
+    return r.rows;
+  }
+
   async binding(deviceId:string,agentId:string) {
     const r=await this.db.query('SELECT device_id AS "deviceId",agent_id AS "agentId",permissions,active FROM device_agent_bindings WHERE device_id=$1 AND agent_id=$2 AND active=true',[deviceId,agentId]);
     return r.rows[0] ?? null;
