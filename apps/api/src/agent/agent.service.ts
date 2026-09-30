@@ -11,7 +11,7 @@ import { ToolExecutionService } from "../tools/tool-execution.service";
 import { AgentRunRepository, AgentRunResult } from "./agent-run.repository";
 import { TaskService } from "../tasks/task.service";
 
-type ActInput={agentId:string;employeeId:string;companyId:string;message:string;conversationId?:string;taskId?:string};
+type ActInput={agentId:string;employeeId:string;companyId:string;message:string;conversationId?:string;taskId?:string;finalizeTask?:boolean};
 
 @Injectable()
 export class AgentService {
@@ -109,6 +109,7 @@ export class AgentService {
     const input:ActInput={
       agentId:run.agentId,employeeId:run.employeeId,companyId:run.companyId,
       conversationId:run.conversationId ?? undefined,message:run.message,taskId,
+      finalizeTask:run.finalizeTask !== false,
     };
     let results=Array.isArray(run.results) ? run.results as AgentRunResult[] : [];
     let step=Number(run.currentStep ?? 0);
@@ -122,7 +123,7 @@ export class AgentService {
             const final=await this.finalAnswer(input,results);
             const status="COMPLETED";
             await this.runs.update(runId,{status,currentStep:step,results,completed:true});
-            if(input.taskId) await this.tasks.updateStatus(input.taskId,"COMPLETED",input.companyId);
+            if(input.taskId && input.finalizeTask !== false) await this.tasks.updateStatus(input.taskId,"COMPLETED",input.companyId);
             return {status,steps:results.length,results,response:final.response};
           }
           const result=await this.chat(input);
@@ -162,11 +163,11 @@ export class AgentService {
 
       const final=await this.finalAnswer(input,results);
       await this.runs.update(runId,{status:"STEP_LIMIT_REACHED",currentStep:step,results,completed:true});
-      if(input.taskId) await this.tasks.updateStatus(input.taskId,"BLOCKED",input.companyId);
+      if(input.taskId && input.finalizeTask !== false) await this.tasks.updateStatus(input.taskId,"BLOCKED",input.companyId);
       return {status:"STEP_LIMIT_REACHED",steps:results.length,results,response:final.response,message:"Agent stopped after the maximum tool steps."};
     } catch(error) {
       await this.runs.update(runId,{status:"FAILED",currentStep:step,results,completed:true}).catch(()=>undefined);
-      if(input.taskId) await this.tasks.updateStatus(input.taskId,"FAILED",input.companyId).catch(()=>undefined);
+      if(input.taskId && input.finalizeTask !== false) await this.tasks.updateStatus(input.taskId,"FAILED",input.companyId).catch(()=>undefined);
       await this.activity.publish({
         type:"agent.failed",companyId:input.companyId,employeeId:input.employeeId,
         agentId:input.agentId,conversationId:input.conversationId,
