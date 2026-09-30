@@ -9,20 +9,22 @@ export type AgentRunResult = {tool:string;result:unknown};
 export class AgentRunRepository {
   constructor(private db:DatabaseService){}
 
-  async create(input:{companyId:string;employeeId:string;agentId:string;conversationId?:string;message:string;maxSteps?:number}){
-    const r=await this.db.query(`INSERT INTO agent_runs(id,company_id,employee_id,agent_id,conversation_id,message,max_steps)
-      VALUES($1,$2,$3,$4,$5,$6,$7)
+  async create(input:{companyId:string;employeeId:string;agentId:string;conversationId?:string;message:string;maxSteps?:number;taskId?:string;finalizeTask?:boolean}){
+    const r=await this.db.query(`INSERT INTO agent_runs(id,company_id,employee_id,agent_id,conversation_id,message,max_steps,task_id,finalize_task)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
       RETURNING id,company_id AS "companyId",employee_id AS "employeeId",agent_id AS "agentId",
         conversation_id AS "conversationId",message,status,current_step AS "currentStep",max_steps AS "maxSteps",
+        task_id AS "taskId",finalize_task AS "finalizeTask",
         results,waiting_execution_id AS "waitingExecutionId",waiting_approval_id AS "waitingApprovalId",
         created_at AS "createdAt",updated_at AS "updatedAt",completed_at AS "completedAt"`,
-      [randomUUID(),input.companyId,input.employeeId,input.agentId,input.conversationId??null,input.message,input.maxSteps??5]);
+      [randomUUID(),input.companyId,input.employeeId,input.agentId,input.conversationId??null,input.message,input.maxSteps??5,input.taskId??null,input.finalizeTask??true]);
     return r.rows[0];
   }
 
   async get(id:string){
     const r=await this.db.query(`SELECT id,company_id AS "companyId",employee_id AS "employeeId",agent_id AS "agentId",
       conversation_id AS "conversationId",message,status,current_step AS "currentStep",max_steps AS "maxSteps",
+      task_id AS "taskId",finalize_task AS "finalizeTask",
       results,waiting_execution_id AS "waitingExecutionId",waiting_approval_id AS "waitingApprovalId",
       created_at AS "createdAt",updated_at AS "updatedAt",completed_at AS "completedAt"
       FROM agent_runs WHERE id=$1`,[id]);
