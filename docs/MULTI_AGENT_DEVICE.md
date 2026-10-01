@@ -51,3 +51,31 @@ The desktop runtime applies two command allowlists: the global `DEVICE_ALLOWED_C
 Terminal execution is performed without a shell, with the working directory fixed to the configured workspace, a configurable timeout, and output/file size limits. Shell chaining and redirection operators are rejected.
 
 These controls are application-level boundaries; they are not an OS/container sandbox.
+
+
+## Browser and screenshot integration
+
+The desktop runtime can optionally connect to a Chromium-based browser through Chrome DevTools Protocol (CDP). Set:
+
+- `DEVICE_BROWSER_CDP_URL=http://127.0.0.1:9222`
+- `DEVICE_MAX_SCREENSHOT_BYTES=5242880`
+
+`device.browser` supports the restricted operations `navigate` (HTTP/HTTPS URLs only) and `title`. `device.screenshot` captures the active page as a PNG/JPEG payload. These capabilities still require both the global action allowlist and the agent binding permission.
+
+## Execution reliability
+
+Device commands are persisted before delivery. If the desktop socket is unavailable, the API finalizes the queued command as `FAILED` rather than leaving it indefinitely queued. Device result completion is idempotent: terminal commands cannot be overwritten after they reach a final state.
+
+Workspace file access also verifies the resolved path stays inside the configured workspace, reducing symlink/path traversal risk.
+
+## End-to-end runtime contract
+
+The production path is:
+
+`Employee -> Web -> AgentService -> Planner -> ToolPolicy/Approval -> ToolExecution -> DeviceService -> DeviceGateway -> Desktop Agent -> tool result -> AgentService -> Web`
+
+For delegated work the path extends to:
+
+`Agent A -> Collaboration/Task -> Agent B -> shared Desktop Agent -> result -> Agent A`
+
+The API tests cover tool execution, approval pause/resume, device authorization, delivery failure handling, and bound-device resolution. CI is the final validation gate for the integrated repository.
