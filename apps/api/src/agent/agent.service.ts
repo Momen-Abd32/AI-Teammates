@@ -168,7 +168,7 @@ export class AgentService {
       if(input.taskId && input.finalizeTask !== false) await this.tasks.updateStatus(input.taskId,"BLOCKED",input.companyId);
       return {status:"STEP_LIMIT_REACHED",steps:results.length,results,response:final.response,message:"Agent stopped after the maximum tool steps."};
     } catch(error) {
-      await this.runs.update(runId,{status:"FAILED",currentStep:step,results,completed:true}).catch(()=>undefined);
+      await Promise.resolve(this.runs.update(runId,{status:"FAILED",currentStep:step,results,completed:true})).catch(()=>undefined);
       if(input.taskId && input.finalizeTask !== false) await Promise.resolve(this.tasks.updateStatus(input.taskId,"FAILED",input.companyId)).catch(()=>undefined);
       await Promise.resolve(this.activity.publish({
         type:"agent.failed",companyId:input.companyId,employeeId:input.employeeId,
