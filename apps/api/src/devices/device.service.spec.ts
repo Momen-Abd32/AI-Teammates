@@ -1,7 +1,7 @@
 import{ForbiddenException}from"@nestjs/common";import{DeviceService}from"./device.service";
 
 describe("DeviceService command authorization",()=>{
- const repo:any={findForEmployee:jest.fn(),binding:jest.fn(),createCommand:jest.fn()};
+ const repo:any={findForEmployee:jest.fn(),binding:jest.fn(),createCommand:jest.fn(),completeCommand:jest.fn(),listForEmployee:jest.fn()};
  const org:any={agents:jest.fn()};
  const gateway:any={sendCommand:jest.fn(),disconnect:jest.fn()};
  let service:DeviceService;
