@@ -34,6 +34,7 @@ describe("AgentService execution loop",()=>{
   x.toolExecutions.request.mockResolvedValue({result:{status:"COMPLETED",stdout:"all tests passed"}});
   const fetchMock=(globalThis.fetch as jest.Mock)
     .mockResolvedValueOnce({ok:true,json:async()=>({action:"TOOL",tool:"device.terminal.execute",reason:"run tests",arguments:{command:"npm test"}})})
+    .mockResolvedValueOnce({ok:true,json:async()=>({action:"NONE",reason:"tool completed"})})
     .mockResolvedValueOnce({ok:true,json:async()=>({response:"Tests passed successfully."})});
   const result=await x.service.act({agentId:"coding",employeeId:"emp",companyId:"co",message:"run tests"});
   expect(x.toolExecutions.request).toHaveBeenCalledWith(expect.objectContaining({
