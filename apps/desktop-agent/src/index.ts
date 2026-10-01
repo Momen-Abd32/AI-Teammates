@@ -1,7 +1,7 @@
 import { WebSocket } from "ws";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile, mkdir, realpath } from "node:fs/promises";
 import { resolve, relative, sep } from "node:path";
 import { access, constants, stat } from "node:fs/promises";
 
@@ -9,6 +9,8 @@ const exec = promisify(execFile);
 const DEVICE_WS_URL = process.env.DEVICE_WS_URL ?? "ws://localhost:3001/device";
 const DEVICE_TOKEN = process.env.DEVICE_TOKEN;
 const WORKSPACE = resolve(process.env.DEVICE_WORKSPACE ?? process.cwd());
+const BROWSER_CDP_URL = process.env.DEVICE_BROWSER_CDP_URL;
+const MAX_SCREENSHOT_BYTES = Number(process.env.DEVICE_MAX_SCREENSHOT_BYTES ?? 5 * 1024 * 1024);
 
 if (!DEVICE_TOKEN) throw new Error("DEVICE_TOKEN is required");
 const DEVICE_AUTH_TOKEN = DEVICE_TOKEN;
@@ -34,10 +36,17 @@ const globalAllowedActions = new Set(
 );
 const agentPolicies = loadAgentPolicies();
 
-function safePath(input: string) {
+async function safePath(input: string, forWrite = false) {
   const target = resolve(WORKSPACE, input);
-  const rel = relative(WORKSPACE, target);
+  const workspaceReal = await realpath(WORKSPACE);
+  const parent = resolve(target, "..");
+  const check = forWrite ? await realpath(parent) : await realpath(target);
+  const rel = relative(workspaceReal, check);
   if (rel.startsWith(".." + sep) || rel === "..") throw new Error("Path is outside the device workspace");
+  if (forWrite) {
+    const targetRel = relative(workspaceReal, target);
+    if (targetRel.startsWith(".." + sep) || targetRel === "..") throw new Error("Path is outside the device workspace");
+  }
   return target;
 }
 
@@ -78,28 +87,82 @@ function limitOutput(value: string) {
   return value.slice(0, MAX_COMMAND_OUTPUT_BYTES) + "\n[output truncated by device policy]";
 }
 
+async function cdpTarget(baseUrl: string) {
+  const response = await fetch(baseUrl.replace(/\/$/, "") + "/json/list", { signal: AbortSignal.timeout(5000) });
+  if (!response.ok) throw new Error("Browser CDP target discovery failed");
+  const targets = await response.json() as Array<{type?:string;webSocketDebuggerUrl?:string}>;
+  const target = targets.find(item => item.type === "page" && item.webSocketDebuggerUrl);
+  if (!target?.webSocketDebuggerUrl) throw new Error("No browser page target is available");
+  return target.webSocketDebuggerUrl;
+}
+
+async function cdpCall(wsUrl: string, method: string, params: Record<string, unknown> = {}) {
+  const ws = new WebSocket(wsUrl);
+  await new Promise<void>((resolve, reject) => {
+    ws.once("open", () => resolve());
+    ws.once("error", reject);
+  });
+  try {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    return await new Promise<any>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("Browser command timed out")), 15000);
+      ws.on("message", raw => {
+        try {
+          const message = JSON.parse(String(raw));
+          if (message.id !== id) return;
+          clearTimeout(timer);
+          if (message.error) reject(new Error(message.error.message ?? "Browser command failed"));
+          else resolve(message.result ?? {});
+        } catch (error) { reject(error); }
+      });
+      ws.send(JSON.stringify({ id, method, params }));
+    });
+  } finally { ws.close(); }
+}
+
 async function execute(agentId: string, action: string, args: any) {
   isActionAllowed(agentId, action);
   const policy = agentPolicies[agentId];
 
   if (action === "device.files.read") {
-    const path = safePath(String(args.path));
+    const path = await safePath(String(args.path));
     await access(path, constants.R_OK);
     await assertFileSize(path);
     return { content: await readFile(path, "utf8") };
   }
   if (action === "device.files.write") {
-    const path = safePath(String(args.path));
+    const path = await safePath(String(args.path), true);
     const content = String(args.content ?? "");
     if (Buffer.byteLength(content, "utf8") > MAX_FILE_BYTES) throw new Error("File exceeds the device-agent size limit");
+    await mkdir(resolve(path, ".."), { recursive: true });
     await writeFile(path, content, "utf8");
     return { ok: true };
   }
   if (action === "device.screenshot") {
-    throw new Error("Screenshot capability is reserved for the desktop integration layer");
+    if (!BROWSER_CDP_URL) throw new Error("DEVICE_BROWSER_CDP_URL is required for screenshots");
+    const target = await cdpTarget(BROWSER_CDP_URL);
+    const result = await cdpCall(target, "Page.captureScreenshot", { format: String(args.format ?? "png") });
+    const data = String((result as any).data ?? "");
+    if (Buffer.byteLength(data, "base64") > MAX_SCREENSHOT_BYTES) throw new Error("Screenshot exceeds the device-agent size limit");
+    return { format: String(args.format ?? "png"), data };
   }
   if (action === "device.browser") {
-    throw new Error("Browser capability is reserved for the browser automation layer");
+    if (!BROWSER_CDP_URL) throw new Error("DEVICE_BROWSER_CDP_URL is required for browser control");
+    const operation = String(args.operation ?? "navigate");
+    const target = await cdpTarget(BROWSER_CDP_URL);
+    if (operation === "navigate") {
+      const url = String(args.url ?? "");
+      const parsed = new URL(url);
+      if (!["http:", "https:"].includes(parsed.protocol)) throw new Error("Only http/https browser navigation is allowed");
+      await cdpCall(target, "Page.enable");
+      await cdpCall(target, "Page.navigate", { url });
+      return { ok: true, url };
+    }
+    if (operation === "title") {
+      const result = await cdpCall(target, "Runtime.evaluate", { expression: "document.title", returnByValue: true });
+      return { title: String((result as any).result?.value ?? "") };
+    }
+    throw new Error("Unsupported browser operation");
   }
   if (action === "device.terminal.execute") {
     const command = String(args.command ?? "").trim();
