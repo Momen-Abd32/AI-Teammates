@@ -1,7 +1,7 @@
 import { WebSocket } from "ws";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { readFile, writeFile, mkdir, realpath } from "node:fs/promises";
+import { readFile, writeFile, realpath } from "node:fs/promises";
 import { resolve, relative, sep } from "node:path";
 import { access, constants, stat } from "node:fs/promises";
 
@@ -134,7 +134,6 @@ async function execute(agentId: string, action: string, args: any) {
     const path = await safePath(String(args.path), true);
     const content = String(args.content ?? "");
     if (Buffer.byteLength(content, "utf8") > MAX_FILE_BYTES) throw new Error("File exceeds the device-agent size limit");
-    await mkdir(resolve(path, ".."), { recursive: true });
     await writeFile(path, content, "utf8");
     return { ok: true };
   }
