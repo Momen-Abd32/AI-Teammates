@@ -81,7 +81,12 @@ export class DeviceService {
     if(input.action==="device.files.write" && !permissions.includes("device.files.write"))
       throw new ForbiddenException("File write access is not enabled for this agent");
     const command=await this.repo.createCommand({id:randomUUID(),companyId:input.companyId,deviceId:input.deviceId,agentId:input.agentId,action:input.action,arguments:input.arguments ?? {}});
-    await this.gateway.sendCommand(command);
+    try {
+      await this.gateway.sendCommand(command);
+    } catch (error) {
+      await this.repo.completeCommand(command.id,"FAILED",{error:error instanceof Error ? error.message : String(error)});
+      throw error;
+    }
     return command;
   }
 }
