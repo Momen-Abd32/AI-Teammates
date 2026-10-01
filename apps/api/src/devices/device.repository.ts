@@ -105,6 +105,6 @@ export class DeviceRepository {
   }
 
   async completeCommand(id:string,status:string,result:unknown) {
-    await this.db.query("UPDATE device_commands SET status=$2,result=$3::jsonb,completed_at=now() WHERE id=$1",[id,status,JSON.stringify(result ?? null)]);
+    await this.db.query("UPDATE device_commands SET status=$2,result=$3::jsonb,completed_at=now() WHERE id=$1 AND status IN ('QUEUED','RUNNING')",[id,status,JSON.stringify(result ?? null)]);
   }
 }
