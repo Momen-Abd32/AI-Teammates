@@ -29,4 +29,16 @@ describe("DeviceService command authorization",()=>{
   repo.findForEmployee.mockResolvedValue(device);org.agents.mockResolvedValue([{id:"agent-1",employeeId:"other-employee"}]);
   await expect(service.requestCommand(base)).rejects.toThrow(new ForbiddenException("Agent does not belong to employee"));
  });
+
+ it("fails closed and finalizes the command when the desktop cannot receive it",async()=>{
+  repo.findForEmployee.mockResolvedValue(device);org.agents.mockResolvedValue([agent]);repo.binding.mockResolvedValue({active:true,permissions:["device.files.write"]});repo.createCommand.mockResolvedValue({id:"cmd-2",...base,action:"device.files.write"});
+  gateway.sendCommand.mockRejectedValue(new Error("Device is offline"));
+  await expect(service.requestCommand({...base,action:"device.files.write",arguments:{path:"a.txt",content:"x"}})).rejects.toThrow("Device is offline");
+  expect(repo.completeCommand).toHaveBeenCalledWith("cmd-2","FAILED",{error:"Device is offline"});
+ });
+ it("resolves only an active binding on a non-revoked device",async()=>{
+  repo.listForEmployee=jest.fn().mockResolvedValue([{id:"revoked",status:"REVOKED"},{id:"unbound",status:"ONLINE"},{id:"bound",status:"ONLINE"}]);
+  repo.binding.mockImplementation(async(id:string)=>id==="bound"?{active:true,agentId:"agent-1"}:null);
+  await expect(service.resolveAgentDevice({companyId:"company-1",employeeId:"employee-1",agentId:"agent-1"})).resolves.toMatchObject({id:"bound"});
+ });
 });
