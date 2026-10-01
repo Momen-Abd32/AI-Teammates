@@ -53,7 +53,6 @@ function isActionAllowed(agentId: string, action: string) {
   }
 }
 
-
 const MAX_FILE_BYTES = Number(process.env.DEVICE_MAX_FILE_BYTES ?? 2 * 1024 * 1024);
 const MAX_COMMAND_OUTPUT_BYTES = Number(process.env.DEVICE_MAX_COMMAND_OUTPUT_BYTES ?? 1024 * 1024);
 const COMMAND_TIMEOUT_MS = Number(process.env.DEVICE_COMMAND_TIMEOUT_MS ?? 30000);
@@ -74,8 +73,14 @@ function parseCommand(command: string, policy?: AgentPolicy) {
   return { file, argv: parts.slice(1) };
 }
 
+function limitOutput(value: string) {
+  if (Buffer.byteLength(value, "utf8") <= MAX_COMMAND_OUTPUT_BYTES) return value;
+  return value.slice(0, MAX_COMMAND_OUTPUT_BYTES) + "\n[output truncated by device policy]";
+}
+
 async function execute(agentId: string, action: string, args: any) {
   isActionAllowed(agentId, action);
+  const policy = agentPolicies[agentId];
 
   if (action === "device.files.read") {
     const path = safePath(String(args.path));
@@ -98,10 +103,14 @@ async function execute(agentId: string, action: string, args: any) {
   }
   if (action === "device.terminal.execute") {
     const command = String(args.command ?? "").trim();
-    if (!command) throw new Error("Command is required");
-    const [file, ...argv] = command.split(/\s+/);
-    const result = await exec(file, argv, { cwd: WORKSPACE, timeout: 30000, maxBuffer: 1024 * 1024 });
-    return { stdout: result.stdout, stderr: result.stderr };
+    const parsed = parseCommand(command, policy);
+    const result = await exec(parsed.file, parsed.argv, {
+      cwd: WORKSPACE,
+      timeout: COMMAND_TIMEOUT_MS,
+      maxBuffer: MAX_COMMAND_OUTPUT_BYTES,
+      windowsHide: true,
+    });
+    return { stdout: limitOutput(result.stdout), stderr: limitOutput(result.stderr) };
   }
   throw new Error("Unsupported action");
 }
