@@ -26,7 +26,7 @@ describe("ToolExecutionService device bridge",()=>{
   expect(x.devices.requestCommand).toHaveBeenCalledWith(expect.objectContaining({deviceId:"device-1",agentId:"testing",action:"device.terminal.execute",arguments:{command:"node --version"}}));
   expect(x.devices.waitForCommand).toHaveBeenCalledWith({companyId:"co",employeeId:"emp",deviceId:"device-1",commandId:"cmd-1"},30000);
   expect(x.executions.complete).toHaveBeenCalledWith("exec-1","COMPLETED",expect.objectContaining({status:"COMPLETED",result:{exitCode:0,stdout:"42"}}));
-  expect(result.status).toBe("COMPLETED");
+  expect(result.execution?.status).toBe("COMPLETED");
  });
 
  it("does not execute a device command before human approval",async()=>{
