@@ -35,7 +35,7 @@ describe("ToolExecutionService device bridge",()=>{
   x.executions.create.mockResolvedValue({id:"exec-2",status:"WAITING_FOR_HUMAN"});
   x.approvals.request.mockResolvedValue({id:"approval-2",status:"PENDING"});
   const result=await x.service.request({companyId:"co",employeeId:"emp",agentId:"testing",name:"device.terminal.execute",resource:"device-1",arguments:{command:"npm test"}});
-  expect(result.status).toBe("WAITING_FOR_HUMAN");
+  expect(result.execution?.status).toBe("WAITING_FOR_HUMAN");
   expect(x.devices.requestCommand).not.toHaveBeenCalled();
   expect(x.devices.waitForCommand).not.toHaveBeenCalled();
   expect(x.approvals.request).toHaveBeenCalledWith(expect.objectContaining({executionId:"exec-2",action:"device.terminal.execute"}),"emp");
