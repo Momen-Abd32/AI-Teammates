@@ -16,7 +16,11 @@ export default function MyAgent(){
   const [loading,setLoading]=useState(true);
   const [sending,setSending]=useState(false);
   const [error,setError]=useState("");
-  const [routerMode,setRouterMode]=useState(true);\n  const [showCreate,setShowCreate]=useState(false);\n  const [newRole,setNewRole]=useState("");\n  const [newProvider,setNewProvider]=useState("openai");\n  const [newModel,setNewModel]=useState("");
+  const [routerMode,setRouterMode]=useState(true);
+  const [showCreate,setShowCreate]=useState(false);
+  const [newRole,setNewRole]=useState("");
+  const [newProvider,setNewProvider]=useState("openai");
+  const [newModel,setNewModel]=useState("");
 
   const activeAgent=useMemo(()=>agents.find(a=>a.id===active?.agentId),[agents,active]);
 
@@ -63,7 +67,16 @@ export default function MyAgent(){
     return c;
   }
 
-  async function createAgent(){\n    if(!newRole.trim())return;\n    const r=await apiFetch("/organization/my-agents",{method:"POST",body:JSON.stringify({role:newRole.trim(),aiProvider:newProvider,aiModel:newModel.trim()||undefined})});\n    if(!r.ok){setError("Could not create AI teammate.");return;}\n    const created=await r.json();\n    setAgents(prev=>[...prev,created]);setShowCreate(false);setNewRole("");setNewModel("");\n    await newConversation(created.id);\n  }\n\n  async function selectAgent(agentId:string){
+  async function createAgent(){
+    if(!newRole.trim())return;
+    const r=await apiFetch("/organization/my-agents",{method:"POST",body:JSON.stringify({role:newRole.trim(),aiProvider:newProvider,aiModel:newModel.trim()||undefined})});
+    if(!r.ok){setError("Could not create AI teammate.");return;}
+    const created=await r.json();
+    setAgents(prev=>[...prev,created]);setShowCreate(false);setNewRole("");setNewModel("");
+    await newConversation(created.id);
+  }
+
+  async function selectAgent(agentId:string){
     const existing=conversations.find(c=>c.agentId===agentId);
     if(existing){await openConversation(existing);return;}
     await newConversation(agentId);
@@ -121,7 +134,15 @@ export default function MyAgent(){
         {!agents.length&&<div style={styles.muted}>No agents assigned yet.</div>}
       </div>
 
-      <button style={styles.newButton} onClick={()=>setShowCreate(v=>!v)}>＋ Add AI teammate</button>\n      {showCreate&&<div style={styles.createBox}>\n        <input value={newRole} onChange={e=>setNewRole(e.target.value)} placeholder="Agent role (e.g. Coding Agent)" style={styles.input}/>\n        <select value={newProvider} onChange={e=>{setNewProvider(e.target.value);setNewModel("");}} style={styles.input}>\n          <option value="openai">OpenAI / ChatGPT</option><option value="anthropic">Anthropic / Claude</option><option value="gemini">Google / Gemini</option>\n        </select>\n        <input value={newModel} onChange={e=>setNewModel(e.target.value)} placeholder="Model (optional)" style={styles.input}/>\n        <button style={styles.newButton} onClick={createAgent}>Create</button>\n      </div>}
+      <button style={styles.newButton} onClick={()=>setShowCreate(v=>!v)}>＋ Add AI teammate</button>
+      {showCreate&&<div style={styles.createBox}>
+        <input value={newRole} onChange={e=>setNewRole(e.target.value)} placeholder="Agent role (e.g. Coding Agent)" style={styles.input}/>
+        <select value={newProvider} onChange={e=>{setNewProvider(e.target.value);setNewModel("");}} style={styles.input}>
+          <option value="openai">OpenAI / ChatGPT</option><option value="anthropic">Anthropic / Claude</option><option value="gemini">Google / Gemini</option>
+        </select>
+        <input value={newModel} onChange={e=>setNewModel(e.target.value)} placeholder="Model (optional)" style={styles.input}/>
+        <button style={styles.newButton} onClick={createAgent}>Create</button>
+      </div>}
       <div style={styles.section}>CONVERSATIONS</div>
       <div style={styles.list}>
         {conversations.filter(c=>agents.some(a=>a.id===c.agentId)).map(c=><button key={c.id} onClick={()=>openConversation(c)}
