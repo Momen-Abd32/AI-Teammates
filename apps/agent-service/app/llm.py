@@ -7,9 +7,9 @@ class LLMNotConfigured(RuntimeError):
     pass
 
 DEFAULT_MODELS = {
-    "openai": "gpt-4o-mini",
-    "anthropic": "claude-3-5-haiku-latest",
-    "gemini": "gemini-2.5-flash",
+    "openai": "gpt-6-luna",
+    "anthropic": "claude-sonnet-5-5",
+    "gemini": "gemini-3.8-flash",
 }
 
 def _model(provider: str, model: str | None) -> str:
