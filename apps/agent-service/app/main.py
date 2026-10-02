@@ -6,29 +6,22 @@ from .collaboration import AgentTaskMessage, TaskResult, execute_task
 from .memory import rank_memories, WorkMemory
 from .runtime import run_task, plan_tool
 
-app = FastAPI(title="AI Teammates Agent Service", version="0.10.0")
+app = FastAPI(title="AI Teammates Agent Service", version="0.11.0")
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "agent-service", "llm_configured": bool(os.getenv("OPENAI_API_KEY"))}
+    configured = [p for p, env in {"openai":"OPENAI_API_KEY","anthropic":"ANTHROPIC_API_KEY","gemini":"GEMINI_API_KEY"}.items() if os.getenv(env)]
+    return {"status":"ok","service":"agent-service","providers":configured}
 
 @app.post("/v1/agents/respond", response_model=AgentResponse)
 def respond(request: AgentRequest):
-    response = run_task(request.role, request.message, request.instructions, request.memories, request.conversationHistory)
+    response = run_task(request.role, request.message, request.instructions, request.memories, request.conversationHistory, request.provider, request.model)
     status = "COMPLETED" if not response.startswith("[LLM_NOT_CONFIGURED]") else "WAITING_FOR_HUMAN"
     return AgentResponse(agent_id=request.agent_id, status=status, response=response)
 
 @app.post("/v1/agents/plan", response_model=ToolPlan)
 def plan(request: AgentPlanRequest):
-    return plan_tool(
-        request.role,
-        request.message,
-        request.instructions,
-        request.availableTools,
-        request.memories,
-        request.conversationHistory,
-        request.toolResults,
-    )
+    return plan_tool(request.role, request.message, request.instructions, request.availableTools, request.memories, request.conversationHistory, request.toolResults, request.provider, request.model)
 
 @app.post("/v1/memory/validate")
 def validate_memory(body: dict):
