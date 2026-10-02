@@ -2,6 +2,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 MemoryScope = Literal["PRIVATE", "PROJECT", "TEAM", "COMPANY"]
+AIProvider = Literal["openai", "anthropic", "gemini"]
 
 class ConversationMessage(BaseModel):
     sender: Literal["USER", "AGENT", "SYSTEM"]
@@ -19,6 +20,8 @@ class AgentContext(BaseModel):
     role: str
     permissions: list[str] = Field(default_factory=list)
     instructions: str = ""
+    provider: AIProvider = "openai"
+    model: str | None = None
 
 class AgentRequest(AgentContext):
     message: str = Field(min_length=1, max_length=20000)
