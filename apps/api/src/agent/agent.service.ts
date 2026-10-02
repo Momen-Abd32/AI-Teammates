@@ -73,6 +73,7 @@ export class AgentService {
       body:JSON.stringify({
         agent_id:agent.id,employee_id:agent.employeeId,company_id:input.companyId,
         role:agent.role,permissions:agent.permissions ?? [],instructions:agent.systemInstructions ?? "",
+        provider:agent.aiProvider ?? "openai",model:agent.aiModel ?? null,
         message:input.message,
         memories:memories.map(memory=>({scope:memory.scope,content:memory.content,score:memory.score})),
         conversationHistory:history.map(item=>({sender:item.sender,content:item.content})),
@@ -226,6 +227,7 @@ export class AgentService {
       body:JSON.stringify({
         agent_id:agent.id,employee_id:agent.employeeId,company_id:input.companyId,
         role:agent.role,permissions:agent.permissions ?? [],instructions:agent.systemInstructions ?? "",
+        provider:agent.aiProvider ?? "openai",model:agent.aiModel ?? null,
         message:contextMessage,
         memories:memories.map(memory=>({scope:memory.scope,content:memory.content,score:memory.score})),
         conversationHistory:history.map(item=>({sender:item.sender,content:item.content})),
@@ -253,6 +255,7 @@ export class AgentService {
       body:JSON.stringify({
         agent_id:agent.id,employee_id:agent.employeeId,company_id:input.companyId,
         role:agent.role,permissions:agent.permissions ?? [],instructions:agent.systemInstructions ?? "",
+        provider:agent.aiProvider ?? "openai",model:agent.aiModel ?? null,
         message:"A delegated agent returned this result. Process it in the context of your current work and respond with the next useful action or conclusion.\n\n"+message,
         memories:memories.map(memory=>({scope:memory.scope,content:memory.content,score:memory.score})),
         conversationHistory:history.map(item=>({sender:item.sender,content:item.content})),
