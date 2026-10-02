@@ -4,7 +4,7 @@ import {apiFetch} from "../../lib/auth";
 
 type Conversation={id:string;agentId:string;title:string;updatedAt:string};
 type Message={id:string;sender:"USER"|"AGENT"|"SYSTEM";content:string;createdAt:string};
-type Agent={id:string;employeeId:string;role:string;permissions?:string[]};
+type Agent={id:string;employeeId:string;role:string;permissions?:string[];aiProvider?:string;aiModel?:string};
 
 export default function MyAgent(){
   const [user,setUser]=useState<any>(null);
@@ -16,7 +16,7 @@ export default function MyAgent(){
   const [loading,setLoading]=useState(true);
   const [sending,setSending]=useState(false);
   const [error,setError]=useState("");
-  const [routerMode,setRouterMode]=useState(true);
+  const [routerMode,setRouterMode]=useState(true);\n  const [showCreate,setShowCreate]=useState(false);\n  const [newRole,setNewRole]=useState("");\n  const [newProvider,setNewProvider]=useState("openai");\n  const [newModel,setNewModel]=useState("");
 
   const activeAgent=useMemo(()=>agents.find(a=>a.id===active?.agentId),[agents,active]);
 
@@ -63,7 +63,7 @@ export default function MyAgent(){
     return c;
   }
 
-  async function selectAgent(agentId:string){
+  async function createAgent(){\n    if(!newRole.trim())return;\n    const r=await apiFetch("/organization/my-agents",{method:"POST",body:JSON.stringify({role:newRole.trim(),aiProvider:newProvider,aiModel:newModel.trim()||undefined})});\n    if(!r.ok){setError("Could not create AI teammate.");return;}\n    const created=await r.json();\n    setAgents(prev=>[...prev,created]);setShowCreate(false);setNewRole("");setNewModel("");\n    await newConversation(created.id);\n  }\n\n  async function selectAgent(agentId:string){
     const existing=conversations.find(c=>c.agentId===agentId);
     if(existing){await openConversation(existing);return;}
     await newConversation(agentId);
@@ -116,12 +116,12 @@ export default function MyAgent(){
         {agents.map(agent=><button key={agent.id} onClick={()=>selectAgent(agent.id)}
           style={{...styles.agentCard,...(activeAgent?.id===agent.id?styles.agentActive:{})}}>
           <span style={styles.agentDot}>●</span>
-          <span><b>{agent.role}</b><small style={styles.agentCardSmall}>{agent.permissions?.length??0} permissions</small></span>
+          <span><b>{agent.role}</b><small style={styles.agentCardSmall}>{agent.aiProvider??"openai"}{agent.aiModel?` · ${agent.aiModel}`:""} · {agent.permissions?.length??0} permissions</small></span>
         </button>)}
         {!agents.length&&<div style={styles.muted}>No agents assigned yet.</div>}
       </div>
 
-      <button style={styles.newButton} onClick={()=>newConversation()}>＋ New conversation</button>
+      <button style={styles.newButton} onClick={()=>setShowCreate(v=>!v)}>＋ Add AI teammate</button>\n      {showCreate&&<div style={styles.createBox}>\n        <input value={newRole} onChange={e=>setNewRole(e.target.value)} placeholder="Agent role (e.g. Coding Agent)" style={styles.input}/>\n        <select value={newProvider} onChange={e=>{setNewProvider(e.target.value);setNewModel("");}} style={styles.input}>\n          <option value="openai">OpenAI / ChatGPT</option><option value="anthropic">Anthropic / Claude</option><option value="gemini">Google / Gemini</option>\n        </select>\n        <input value={newModel} onChange={e=>setNewModel(e.target.value)} placeholder="Model (optional)" style={styles.input}/>\n        <button style={styles.newButton} onClick={createAgent}>Create</button>\n      </div>}
       <div style={styles.section}>CONVERSATIONS</div>
       <div style={styles.list}>
         {conversations.filter(c=>agents.some(a=>a.id===c.agentId)).map(c=><button key={c.id} onClick={()=>openConversation(c)}
@@ -169,5 +169,5 @@ bubble:{maxWidth:"75%",background:"#fff",border:"1px solid #ddd",borderRadius:14
 userBubble:{background:"#171717",color:"#fff",borderColor:"#171717"},sender:{fontSize:10,fontWeight:700,opacity:.65,marginBottom:4},
 typing:{fontSize:13,color:"#777",padding:10},error:{color:"#b00020",padding:"0 24px 10px"},
 composer:{display:"flex",gap:10,padding:18,background:"#fff",borderTop:"1px solid #ddd"},textarea:{flex:1,minHeight:50,resize:"vertical",border:"1px solid #ccc",borderRadius:10,padding:12,fontFamily:"inherit"},
-button:{border:0,borderRadius:10,padding:"0 20px",background:"#171717",color:"#fff",cursor:"pointer"},center:{padding:40}
+button:{border:0,borderRadius:10,padding:"0 20px",background:"#171717",color:"#fff",cursor:"pointer"},createBox:{marginTop:8,padding:10,border:"1px solid #eee",borderRadius:10,background:"#fafafa",display:"grid",gap:7},input:{width:"100%",boxSizing:"border-box",border:"1px solid #ccc",borderRadius:8,padding:"8px",fontFamily:"inherit"},center:{padding:40}
 };
