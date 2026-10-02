@@ -47,12 +47,14 @@ export class OrganizationRepository {
     return r.rows[0];
   }
 
-  async createAgent(companyId:string,employeeId:string,role:string,instructions="") {
+  async createAgent(companyId:string,employeeId:string,role:string,instructions="",provider="openai",model="") {
     const r = await this.db.query(
-      `INSERT INTO agents(id,company_id,employee_id,role,system_instructions,permissions)
-       VALUES(gen_random_uuid(),$1,$2,$3,$4,$5::jsonb)
-       RETURNING id,company_id AS "companyId",employee_id AS "employeeId",role,system_instructions AS "systemInstructions",permissions`,
-      [companyId,employeeId,role,instructions,JSON.stringify(DEFAULT_AGENT_PERMISSIONS)],
+      `INSERT INTO agents(id,company_id,employee_id,role,system_instructions,permissions,ai_provider,ai_model)
+       VALUES(gen_random_uuid(),$1,$2,$3,$4,$5::jsonb,$6,$7)
+       RETURNING id,company_id AS "companyId",employee_id AS "employeeId",role,
+       system_instructions AS "systemInstructions",permissions,
+       ai_provider AS "aiProvider",ai_model AS "aiModel"`,
+      [companyId,employeeId,role,instructions,JSON.stringify(DEFAULT_AGENT_PERMISSIONS),provider,model || null],
     );
     return r.rows[0];
   }
@@ -67,7 +69,7 @@ export class OrganizationRepository {
 
   async agents(companyId:string) {
     const r = await this.db.query(
-      "SELECT id,company_id AS \"companyId\",employee_id AS \"employeeId\",role,system_instructions AS \"systemInstructions\",permissions FROM agents WHERE company_id=$1 ORDER BY created_at",
+      'SELECT id,company_id AS "companyId",employee_id AS "employeeId",role,system_instructions AS "systemInstructions",permissions,ai_provider AS "aiProvider",ai_model AS "aiModel" FROM agents WHERE company_id=$1 ORDER BY created_at',
       [companyId],
     );
     return r.rows;
@@ -75,7 +77,7 @@ export class OrganizationRepository {
 
   async agentsForEmployee(companyId:string,employeeId:string) {
     const r = await this.db.query(
-      "SELECT id,company_id AS \"companyId\",employee_id AS \"employeeId\",role,system_instructions AS \"systemInstructions\",permissions FROM agents WHERE company_id=$1 AND employee_id=$2 ORDER BY created_at",
+      'SELECT id,company_id AS "companyId",employee_id AS "employeeId",role,system_instructions AS "systemInstructions",permissions,ai_provider AS "aiProvider",ai_model AS "aiModel" FROM agents WHERE company_id=$1 AND employee_id=$2 ORDER BY created_at',
       [companyId,employeeId],
     );
     return r.rows;
