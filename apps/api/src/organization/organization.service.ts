@@ -1,6 +1,8 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { OrganizationRepository } from "./organization.repository";
 
+const PROVIDERS=["openai","anthropic","gemini"] as const;
+
 @Injectable()
 export class OrganizationService {
   constructor(private repo:OrganizationRepository) {}
@@ -19,12 +21,12 @@ export class OrganizationService {
     return this.repo.createEmployee(b.companyId,b.name.trim(),b.email.trim(),b.role);
   }
 
-  async createAgent(b:{companyId:string;employeeId:string;role:string;systemInstructions?:string}) {
+  async createAgent(b:{companyId:string;employeeId:string;role:string;systemInstructions?:string;aiProvider?:string;aiModel?:string}) {
     const employee=await this.repo.employee(b.employeeId);
-    if(!employee || employee.companyId!==b.companyId) {
-      throw new NotFoundException("Employee not found in company");
-    }
-    return this.repo.createAgent(b.companyId,b.employeeId,b.role,b.systemInstructions ?? "");
+    if(!employee || employee.companyId!==b.companyId) throw new NotFoundException("Employee not found in company");
+    const provider=(b.aiProvider ?? "openai").trim().toLowerCase();
+    if(!PROVIDERS.includes(provider as typeof PROVIDERS[number])) throw new Error("Unsupported AI provider");
+    return this.repo.createAgent(b.companyId,b.employeeId,b.role,b.systemInstructions ?? "",provider,b.aiModel?.trim() ?? "");
   }
 
   employees(companyId:string) { return this.repo.employees(companyId); }
