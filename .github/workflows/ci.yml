@@ -45,5 +45,8 @@ jobs:
           python -m compileall apps/agent-service/app
           python -m compileall apps/sandbox-worker
 
+      - name: Test agent service providers
+        run: PYTHONPATH=apps/agent-service python -m unittest discover -s apps/agent-service/tests -p 'test_*.py'
+
       - name: Validate Docker Compose
         run: AUTH_SECRET=ci-validation-secret docker compose config
