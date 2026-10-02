@@ -24,15 +24,14 @@ def _openai_chat(system: str, user: str, model: str, json_mode: bool = False) ->
     if base_url:
         kwargs["base_url"] = base_url
     client = OpenAI(**kwargs)
-    params = {
-        "model": model,
-        "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
-        "temperature": 0 if json_mode else 0.2,
-    }
-    if json_mode:
-        params["response_format"] = {"type": "json_object"}
-    response = client.chat.completions.create(**params)
-    return (response.choices[0].message.content or "").strip()
+    response = client.responses.create(
+        model=model,
+        instructions=system,
+        input=user,
+        store=False,
+        text={"format": {"type": "json_object"}} if json_mode else {"format": {"type": "text"}},
+    )
+    return (response.output_text or "").strip()
 
 def _http_json(url: str, headers: dict[str, str], payload: dict) -> dict:
     request = Request(url, data=json.dumps(payload).encode("utf-8"), headers={**headers, "content-type": "application/json"}, method="POST")
