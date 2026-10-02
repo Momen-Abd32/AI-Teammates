@@ -39,14 +39,15 @@ def build_system(role: str, instructions: str = "", memories=None, history=None)
         system += "\n\n" + build_memory_context(memories)
     return system
 
-def run_task(role: str, description: str, instructions: str = "", memories=None, history=None) -> str:
+def run_task(role: str, description: str, instructions: str = "", memories=None, history=None, provider="openai", model=None) -> str:
     return chat_text(
+        provider=provider, model=model,
         system=build_system(role, instructions, memories, history),
         user=description,
     )
 
 def plan_tool(role: str, message: str, instructions: str, available_tools: list[dict],
-              memories=None, history=None, tool_results=None) -> ToolPlan:
+              memories=None, history=None, tool_results=None, provider="openai", model=None) -> ToolPlan:
     tool_contract = json.dumps(available_tools, separators=(",", ":"))
     prior_results = json.dumps(tool_results or [], separators=(",", ":"))
     prompt = f"""Decide whether exactly one available tool should be requested for the user's task.
@@ -74,6 +75,7 @@ User task:
 """
     try:
         data = chat_json(
+            provider=provider, model=model,
             system=build_system(role, instructions, memories, history),
             user=prompt,
         )
