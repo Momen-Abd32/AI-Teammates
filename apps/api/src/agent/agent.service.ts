@@ -305,6 +305,7 @@ export class AgentService {
       method:"POST",headers:{"content-type":"application/json"},
       body:JSON.stringify({
         ...input,role:agent.role,permissions:agent.permissions ?? [],instructions:agent.systemInstructions ?? "",
+        provider:agent.aiProvider ?? "openai",model:agent.aiModel ?? null,
         memories:memories.map(memory => ({scope:memory.scope,content:memory.content,score:memory.score})),
         conversationHistory:history.map(item => ({sender:item.sender,content:item.content})),
       }),
