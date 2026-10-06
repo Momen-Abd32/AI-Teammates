@@ -41,11 +41,16 @@ class ProviderRoutingTests(unittest.TestCase):
             os.environ.pop(key, None)
 
     def test_default_models_are_current(self):
-        self.assertEqual(llm._model("openai", None), "gpt-6-luna")
+        self.assertEqual(llm._model("openai", None), "gpt-5.6-luna")
         self.assertEqual(llm._model("anthropic", None), "claude-sonnet-5-5")
         self.assertEqual(llm._model("gemini", None), "gemini-3.8-flash")
 
-    def test_explicit_model_overrides_default(self):
+    def test_environment_model_overrides_default(self):
+        os.environ["OPENAI_MODEL"] = "configured-model"
+        self.assertEqual(llm._model("openai", None), "configured-model")
+
+    def test_explicit_model_overrides_environment(self):
+        os.environ["OPENAI_MODEL"] = "configured-model"
         self.assertEqual(llm._model("openai", "custom-model"), "custom-model")
 
     def test_openai_uses_responses_api_and_selected_model(self):
