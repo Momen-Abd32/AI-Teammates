@@ -7,7 +7,7 @@ class LLMNotConfigured(RuntimeError):
     pass
 
 DEFAULT_MODELS = {
-    "openai": "gpt-6-luna",
+    "openai": "gpt-5.6-luna",
     "anthropic": "claude-sonnet-5-5",
     "gemini": "gemini-3.8-flash",
 }
