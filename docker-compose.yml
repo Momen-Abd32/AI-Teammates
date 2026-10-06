@@ -61,6 +61,8 @@ services:
       AGENT_SERVICE_URL: http://agent-service:8000
       AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET must be set to a strong random value}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
       SANDBOX_WORKER_URL: http://sandbox-worker:8010
     depends_on: [postgres,redis,agent-service,agent-worker,sandbox-worker]
