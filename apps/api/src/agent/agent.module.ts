@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { forwardRef, Module } from "@nestjs/common";
 import { AgentController } from "./agent.controller";
 import { AgentService } from "./agent.service";
 import { AgentRunRepository } from "./agent-run.repository";
@@ -13,9 +13,19 @@ import { InfrastructureModule } from "../infrastructure/infrastructure.module";
 import { TaskModule } from "../tasks/task.module";
 
 @Module({
-  imports:[InfrastructureModule,SecurityModule,AuditModule,OrganizationModule,MemoryModule,ConversationModule,ActivityModule,ToolModule,TaskModule],
-  controllers:[AgentController],
-  providers:[AgentService,AgentRunRepository],
-  exports:[AgentService],
+  imports: [
+    InfrastructureModule,
+    SecurityModule,
+    AuditModule,
+    OrganizationModule,
+    MemoryModule,
+    ConversationModule,
+    ActivityModule,
+    forwardRef(() => ToolModule),
+    TaskModule,
+  ],
+  controllers: [AgentController],
+  providers: [AgentService, AgentRunRepository],
+  exports: [AgentService],
 })
 export class AgentModule {}
