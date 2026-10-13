@@ -1,20 +1,20 @@
-import{Module}from "@nestjs/common";
-import{ToolController}from "./tool.controller";
-import{ToolRegistry}from "./tool.registry";
-import{ToolPolicyService}from "./tool-policy.service";
-import{ToolExecutionService}from "./tool-execution.service";
-import{ToolExecutionRepository}from "./tool-execution.repository";
-import{ApprovalModule}from "../approvals/approval.module";
-import{OrganizationModule}from "../organization/organization.module";
-import{SandboxModule}from "../sandbox/sandbox.module";
-import{ActivityModule}from "../activity/activity.module";
-import{TaskModule}from "../tasks/task.module";
-import{DeviceModule}from "../devices/device.module";
+import { forwardRef, Module } from "@nestjs/common";
+import { ToolController } from "./tool.controller";
+import { ToolRegistry } from "./tool.registry";
+import { ToolPolicyService } from "./tool-policy.service";
+import { ToolExecutionService } from "./tool-execution.service";
+import { ToolExecutionRepository } from "./tool-execution.repository";
+import { ApprovalModule } from "../approvals/approval.module";
+import { OrganizationModule } from "../organization/organization.module";
+import { SandboxModule } from "../sandbox/sandbox.module";
+import { ActivityModule } from "../activity/activity.module";
+import { TaskModule } from "../tasks/task.module";
+import { DeviceModule } from "../devices/device.module";
 
 @Module({
-  imports:[ApprovalModule,OrganizationModule,TaskModule,SandboxModule,ActivityModule,DeviceModule],
-  controllers:[ToolController],
-  providers:[ToolRegistry,ToolPolicyService,ToolExecutionService,ToolExecutionRepository],
-  exports:[ToolExecutionService,ToolRegistry],
+  imports: [forwardRef(() => ApprovalModule), OrganizationModule, TaskModule, SandboxModule, ActivityModule, DeviceModule],
+  controllers: [ToolController],
+  providers: [ToolRegistry, ToolPolicyService, ToolExecutionService, ToolExecutionRepository],
+  exports: [ToolExecutionService, ToolRegistry],
 })
-export class ToolModule{}
+export class ToolModule {}
