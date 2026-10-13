@@ -62,6 +62,7 @@ if ($Install) {
 $apiDir = Join-Path $root "apps\api"
 $webDir = Join-Path $root "apps\web"
 $agentDir = Join-Path $root "apps\agent-service"
+$desktopDir = Join-Path $root "apps\desktop-agent"
 $venvPython = Join-Path $agentDir ".venv\Scripts\python.exe"
 
 if (-not (Test-Path (Join-Path $root "node_modules"))) {
@@ -71,6 +72,20 @@ if (-not (Test-Path $venvPython)) {
   throw "Agent-service Python environment is missing. Run .\scripts\dev-windows.ps1 -Install first."
 }
 
+# Avoid Next silently selecting another port and colliding with the API.
+$conflicts = @()
+foreach ($port in @(3000, 3001, 8000)) {
+  $listeners = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+  foreach ($listener in $listeners) {
+    $processName = "unknown"
+    try { $processName = (Get-Process -Id $listener.OwningProcess -ErrorAction Stop).ProcessName } catch {}
+    $conflicts += "port $port ($processName, PID $($listener.OwningProcess))"
+  }
+}
+if ($conflicts.Count -gt 0) {
+  throw "Required ports are already in use: $($conflicts -join ', '). Close the owning apps (including Docker Desktop if it is holding a port) and rerun. Do not terminate an unknown process blindly."
+}
+
 $apiCommand = 'Set-Location "' + $root + '"; pnpm --filter @ai-teammates/api build; if ($LASTEXITCODE -eq 0) { pnpm --filter @ai-teammates/api start }'
 $webCommand = 'Set-Location "' + $root + '"; pnpm --filter @ai-teammates/web dev'
 $agentCommand = 'Set-Location "' + $agentDir + '"; & "' + $venvPython + '" -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000'
@@ -78,6 +93,15 @@ $agentCommand = 'Set-Location "' + $agentDir + '"; & "' + $venvPython + '" -m uv
 Start-Process powershell.exe -WorkingDirectory $root -ArgumentList @("-NoExit", "-Command", $apiCommand)
 Start-Process powershell.exe -WorkingDirectory $root -ArgumentList @("-NoExit", "-Command", $webCommand)
 Start-Process powershell.exe -WorkingDirectory $agentDir -ArgumentList @("-NoExit", "-Command", $agentCommand)
+
+$deviceToken = [Environment]::GetEnvironmentVariable("DEVICE_TOKEN", "Process")
+if (-not [string]::IsNullOrWhiteSpace($deviceToken)) {
+  $desktopCommand = 'Set-Location "' + $root + '"; pnpm --filter @ai-teammates/desktop-agent start'
+  Start-Process powershell.exe -WorkingDirectory $root -ArgumentList @("-NoExit", "-Command", $desktopCommand)
+  Write-Host "Desktop agent started (local DEVICE_TOKEN was configured)." -ForegroundColor Green
+} else {
+  Write-Host "Desktop agent not started because DEVICE_TOKEN is empty in .env." -ForegroundColor Yellow
+}
 
 Write-Host ""
 Write-Host "Started API, web, and agent-service in separate PowerShell windows." -ForegroundColor Green
