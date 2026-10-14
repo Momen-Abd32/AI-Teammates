@@ -56,9 +56,10 @@ export class TeamOrchestratorService {
     }
 
     const text = request.toLowerCase();
-    const asksCoding = /\b(build|create|implement|develop|code|fix|refactor|write|make)\b/.test(text);
     const asksTesting = /\b(test|testing|qa|quality assurance|regression)\b/.test(text);
     const asksDocs = /\b(document|documentation|readme|docs)\b/.test(text);
+    const asksCoding = /\b(build|implement|develop|code|fix|refactor|website|web app|mobile app|software|application|feature|component)\b/.test(text)
+      || (/\bcreate\b/.test(text) && !asksDocs);
 
     const requestedStages: Stage[] = asksCoding
       ? [STAGES[0], STAGES[1], STAGES[2]]
@@ -170,7 +171,7 @@ export class TeamOrchestratorService {
     }
 
     const hasFailure = stages.some((stage) =>
-      ["FAILED", "BLOCKED", "SKIPPED"].includes(stage.status),
+      ["FAILED", "BLOCKED", "SKIPPED", "STEP_LIMIT_REACHED"].includes(stage.status),
     );
     const waitingForHuman = stages.some((stage) => stage.status === "WAITING_FOR_HUMAN");
 
