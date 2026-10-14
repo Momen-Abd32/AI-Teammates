@@ -56,18 +56,19 @@ export class TeamOrchestratorService {
     }
 
     const text = request.toLowerCase();
-    const testingOnly = /\b(test|testing|qa|quality assurance|regression)\b/.test(text)
-      && !/\b(build|create|implement|develop|code|fix|refactor|app|application|project)\b/.test(text)
-      && !/\b(document|documentation|readme|docs)\b/.test(text);
-    const docsOnly = /\b(document|documentation|readme|docs)\b/.test(text)
-      && !/\b(build|create|implement|develop|code|fix|refactor|app|application|project)\b/.test(text)
-      && !/\b(test|testing|qa|quality assurance|regression)\b/.test(text);
+    const asksCoding = /\b(build|create|implement|develop|code|fix|refactor|write|make)\b/.test(text);
+    const asksTesting = /\b(test|testing|qa|quality assurance|regression)\b/.test(text);
+    const asksDocs = /\b(document|documentation|readme|docs)\b/.test(text);
 
-    const requestedStages: Stage[] = testingOnly
-      ? [STAGES[1]]
-      : docsOnly
-        ? [STAGES[2]]
-        : [STAGES[0], STAGES[1], STAGES[2]];
+    const requestedStages: Stage[] = asksCoding
+      ? [STAGES[0], STAGES[1], STAGES[2]]
+      : asksTesting && asksDocs
+        ? [STAGES[1], STAGES[2]]
+        : asksTesting
+          ? [STAGES[1]]
+          : asksDocs
+            ? [STAGES[2]]
+            : [STAGES[0], STAGES[1], STAGES[2]];
 
     const stages: Array<{
       stage: string;
