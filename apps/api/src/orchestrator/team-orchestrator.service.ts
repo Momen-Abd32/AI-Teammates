@@ -235,17 +235,17 @@ export class TeamOrchestratorService {
                   });
                   const retestStatus = String(retest?.status ?? "COMPLETED");
                   const retestResponse = typeof retest?.response === "string" ? retest.response : "Testing retry returned no summary.";
+                  const stillFailing = /\\b(failed|failure|failures|failing|error|errors|not passing|does not pass)\\b/i.test(retestResponse)
+                    && !/\\b(no failures|0 failures|no errors|all tests pass(?:ed)?|all tests are passing)\\b/i.test(retestResponse);
                   stages.push({
                     stage: "Testing retry",
                     agentId: agent.id,
                     agentRole: agent.role,
                     taskId: retestTask.id,
-                    status: retestStatus,
+                    status: stillFailing && retestStatus === "COMPLETED" ? "FAILED" : retestStatus,
                     response: retestResponse,
                   });
                   previousResponse = retestResponse;
-                  const stillFailing = /\\b(failed|failure|failures|failing|error|errors|not passing|does not pass)\\b/i.test(retestResponse)
-                    && !/\\b(no failures|0 failures|no errors|all tests pass(?:ed)?|all tests are passing)\\b/i.test(retestResponse);
                   if (retestStatus !== "COMPLETED" || stillFailing) blockedByFailure = true;
                 } catch (retestError) {
                   const errorMessage = retestError instanceof Error ? retestError.message : "Testing retry failed";
