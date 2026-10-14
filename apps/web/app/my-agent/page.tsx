@@ -157,7 +157,7 @@ export default function MyAgent(){
     <section style={styles.chat}>
       <header style={styles.header}>
         <div><b>{activeAgent?.role??"Select an AI teammate"}</b><div style={styles.muted}>{active?.title??"Choose one of your agents"}</div></div>
-        <div style={{display:"flex",gap:8,alignItems:"center"}}><label style={styles.routerToggle}><input type="checkbox" checked={routerMode} onChange={e=>setRouterMode(e.target.checked)}/> Auto-route</label><button style={styles.secondary} onClick={()=>newConversation()}>New chat</button></div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}><a href="/team" style={styles.secondary}>Team Chat</a><label style={styles.routerToggle}><input type="checkbox" checked={routerMode} onChange={e=>setRouterMode(e.target.checked)}/> Auto-route</label><button style={styles.secondary} onClick={()=>newConversation()}>New chat</button></div>
       </header>
       <div style={styles.messages}>
         {!messages.length&&<div style={styles.empty}><h2>{activeAgent?.role??"Your AI teammates"}</h2><p>{activeAgent?"This specialist runs for you on your connected device and only receives its authorized work context.":"Select an agent to start."}</p></div>}
