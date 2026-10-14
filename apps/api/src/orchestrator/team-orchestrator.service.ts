@@ -155,6 +155,127 @@ export class TeamOrchestratorService {
         if (status === "WAITING_FOR_HUMAN" || status === "FAILED" || status === "STEP_LIMIT_REACHED") {
           blockedByFailure = true;
         }
+
+        // One bounded repair cycle: send a reported test failure back to Coding,
+        // then ask Testing to rerun once. Never loop indefinitely.
+        const reportsTestFailure = stage.key === "testing"
+          && /\\b(failed|failure|failures|failing|error|errors|not passing|does not pass)\\b/i.test(response)
+          && !/\\b(no failures|0 failures|no errors|all tests pass(?:ed)?|all tests are passing)\\b/i.test(response);
+
+        if (reportsTestFailure && !blockedByFailure) {
+          const coder = available.find((candidate) =>
+            candidate.id !== agent.id
+            && STAGES[0].rolePattern.test(candidate.role + " " + (candidate.systemInstructions ?? "")),
+          );
+
+          if (!coder) {
+            stages.push({
+              stage: "Coding repair",
+              status: "BLOCKED",
+              error: "Tests reported a failure, but no separate Coding specialist is configured to fix it.",
+            });
+            blockedByFailure = true;
+          } else {
+            const repairTask = await this.tasks.create({
+              companyId: input.companyId,
+              title: `Team Coding repair: ${request.slice(0, 55)}`,
+              description: "Repair reported test failures",
+              projectId: input.projectId,
+              assignedAgentId: coder.id,
+              status: "WAITING_FOR_AGENT",
+            });
+            try {
+              const repair: any = await this.agents.act({
+                agentId: coder.id,
+                employeeId: input.employeeId,
+                companyId: input.companyId,
+                taskId: repairTask.id,
+                message: [
+                  "The Testing specialist reported failures in the shared workspace.",
+                  `Original request: ${request}`,
+                  "Inspect the existing code and test output, identify the cause, make a focused fix, and report exactly what changed.",
+                  `Testing report:\n${response}`,
+                ].join("\\n\\n"),
+              });
+              const repairStatus = String(repair?.status ?? "COMPLETED");
+              const repairResponse = typeof repair?.response === "string" ? repair.response : "Coding repair returned no summary.";
+              stages.push({
+                stage: "Coding repair",
+                agentId: coder.id,
+                agentRole: coder.role,
+                taskId: repairTask.id,
+                status: repairStatus,
+                response: repairResponse,
+              });
+              previousResponse = repairResponse;
+              if (repairStatus !== "COMPLETED") {
+                blockedByFailure = true;
+              } else {
+                const retestTask = await this.tasks.create({
+                  companyId: input.companyId,
+                  title: `Team Testing retry: ${request.slice(0, 55)}`,
+                  description: "Rerun tests after the coding repair",
+                  projectId: input.projectId,
+                  assignedAgentId: agent.id,
+                  status: "WAITING_FOR_AGENT",
+                });
+                try {
+                  const retest: any = await this.agents.act({
+                    agentId: agent.id,
+                    employeeId: input.employeeId,
+                    companyId: input.companyId,
+                    taskId: retestTask.id,
+                    message: [
+                      "Coding made a repair after your previous test report. Rerun the relevant checks once.",
+                      `Original request: ${request}`,
+                      `Previous test report:\n${response}`,
+                      `Coding repair report:\n${repairResponse}`,
+                      "Report the exact test commands and results. Do not claim tests passed unless you ran them.",
+                    ].join("\\n\\n"),
+                  });
+                  const retestStatus = String(retest?.status ?? "COMPLETED");
+                  const retestResponse = typeof retest?.response === "string" ? retest.response : "Testing retry returned no summary.";
+                  stages.push({
+                    stage: "Testing retry",
+                    agentId: agent.id,
+                    agentRole: agent.role,
+                    taskId: retestTask.id,
+                    status: retestStatus,
+                    response: retestResponse,
+                  });
+                  previousResponse = retestResponse;
+                  const stillFailing = /\\b(failed|failure|failures|failing|error|errors|not passing|does not pass)\\b/i.test(retestResponse)
+                    && !/\\b(no failures|0 failures|no errors|all tests pass(?:ed)?|all tests are passing)\\b/i.test(retestResponse);
+                  if (retestStatus !== "COMPLETED" || stillFailing) blockedByFailure = true;
+                } catch (retestError) {
+                  const errorMessage = retestError instanceof Error ? retestError.message : "Testing retry failed";
+                  await this.tasks.updateStatus(retestTask.id, "FAILED", input.companyId).catch(() => undefined);
+                  stages.push({
+                    stage: "Testing retry",
+                    agentId: agent.id,
+                    agentRole: agent.role,
+                    taskId: retestTask.id,
+                    status: "FAILED",
+                    error: errorMessage,
+                  });
+                  blockedByFailure = true;
+                }
+              }
+            } catch (repairError) {
+              const errorMessage = repairError instanceof Error ? repairError.message : "Coding repair failed";
+              await this.tasks.updateStatus(repairTask.id, "FAILED", input.companyId).catch(() => undefined);
+              stages.push({
+                stage: "Coding repair",
+                agentId: coder.id,
+                agentRole: coder.role,
+                taskId: repairTask.id,
+                status: "FAILED",
+                error: errorMessage,
+              });
+              blockedByFailure = true;
+            }
+          }
+        }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Agent run failed";
         await this.tasks.updateStatus(task.id, "FAILED", input.companyId).catch(() => undefined);
