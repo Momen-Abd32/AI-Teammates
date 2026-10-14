@@ -199,11 +199,11 @@ export default function TeamChatPage() {
                       <strong>{stage.stage}</strong>
                       <span>{stage.agentRole ?? (stage.status === "SKIPPED" ? "Specialist not configured" : "Team stage")}</span>
                     </div>
-                    <span style={statusStyle(stage.status)}>{stage.status.replaceAll("_", " ")}</span>
+                    <span style={statusStyle(stage.status)}>{stage.status.replace(/_/g, " ")}</span>
                   </div>
                   {stage.response && <p style={styles.stageResponse}>{stage.response}</p>}
                   {stage.error && <p style={styles.stageError}>{stage.error}</p>}
-                  {stage.taskId && <a href={"/tasks/" + stage.taskId} style={styles.taskLink}>Task ID: {stage.taskId}</a>}
+                  {stage.taskId && <div style={styles.taskLink}>Task ID: {stage.taskId}</div>}
                 </div>
               ))}
             </div>
@@ -244,7 +244,7 @@ export default function TeamChatPage() {
             <div style={styles.taskStatusDot} />
             <div style={styles.taskItemText}>
               <strong>{task.title}</strong>
-              <span>{task.status.replaceAll("_", " ")}</span>
+              <span>{task.status.replace(/_/g, " ")}</span>
             </div>
           </div>
         ))}
