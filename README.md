@@ -82,3 +82,20 @@ The repository CI validates:
 ## Remaining production work
 
 Before a public production deployment, complete deployment automation, stronger secret/key management, production identity-provider integration where required, monitoring/alerting, backup/restore procedures, and a real-device/browser integration test environment.
+
+
+## Documentation
+
+The technical documentation index is available in [`docs/README.md`](docs/README.md). Start with:
+
+- [System Architecture](docs/ARCHITECTURE.md)
+- [Development Guide](docs/DEVELOPMENT_GUIDE.md)
+- [Configuration Reference](docs/CONFIGURATION.md)
+- [Team Orchestration](docs/TEAM_ORCHESTRATION.md)
+- [Memory and Embeddings](docs/MEMORY_AND_EMBEDDINGS.md)
+- [Database and Migrations](docs/DATABASE.md)
+- [Device Runtime](docs/DEVICE_RUNTIME.md)
+- [API Reference](docs/API.md)
+- [Security Model](docs/SECURITY.md)
+- [Testing Strategy](docs/TESTING.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
