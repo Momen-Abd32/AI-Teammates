@@ -17,3 +17,8 @@ PostgreSQL/pgvector stores application state and memory. Redis provides messagin
 
 ## Roadmap
 Foundation -> Company/Employee -> Agents -> Memory -> Tasks -> Collaboration -> Approvals -> Tools/Sandbox -> Security/Evaluation -> Deployment.
+
+
+## Detailed technical references
+
+This blueprint is a short product/architecture summary. For implementation-level detail, use the [documentation index](README.md), particularly the architecture, development, configuration, orchestration, memory, database, device runtime, API, security, testing and troubleshooting guides.
