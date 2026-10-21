@@ -1,19 +1,26 @@
 import json
 import os
+import re
+from dataclasses import dataclass
+from typing import Callable
 from urllib.request import Request, urlopen
 from openai import OpenAI
 
 class LLMNotConfigured(RuntimeError):
     pass
 
-DEFAULT_MODELS = {
-    "openai": "gpt-5.6-luna",
-    "anthropic": "claude-sonnet-5-5",
-    "gemini": "gemini-3.8-flash",
-}
+ProviderGenerator = Callable[[str, str, str, bool], str]
 
-def _model(provider: str, model: str | None) -> str:
-    return (model or os.getenv(f"{provider.upper()}_MODEL", "") or DEFAULT_MODELS[provider]).strip()
+@dataclass(frozen=True)
+class ProviderAdapter:
+    """Vendor adapter used by the provider-neutral agent runtime.
+
+    generate receives (system_prompt, user_prompt, model, json_mode). Keep
+    credentials and vendor-specific request handling inside the adapter.
+    """
+
+    default_model: str
+    generate: ProviderGenerator
 
 def _openai_chat(system: str, user: str, model: str, json_mode: bool = False) -> str:
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
@@ -67,29 +74,46 @@ def _gemini_chat(system: str, user: str, model: str, json_mode: bool = False) ->
     )
     return "".join(part.get("text", "") for part in data.get("candidates", [{}])[0].get("content", {}).get("parts", [])).strip()
 
+# Add providers here, or register an adapter from an optional provider module.
+# Agent and workflow code should only call chat_text/chat_json, never vendor SDKs.
+PROVIDERS: dict[str, ProviderAdapter] = {
+    "openai": ProviderAdapter(default_model="gpt-5.6-luna", generate=_openai_chat),
+    "anthropic": ProviderAdapter(default_model="claude-sonnet-5-5", generate=_anthropic_chat),
+    "gemini": ProviderAdapter(default_model="gemini-3.8-flash", generate=_gemini_chat),
+}
+# Compatibility mapping for existing imports and tests.
+DEFAULT_MODELS = {name: adapter.default_model for name, adapter in PROVIDERS.items()}
+
+def register_provider(name: str, adapter: ProviderAdapter) -> None:
+    """Register or replace a provider without changing agent dispatch code."""
+    key = name.strip().lower()
+    if not re.fullmatch(r"[a-z][a-z0-9_-]*", key):
+        raise ValueError("Provider names must start with a letter and contain only letters, numbers, '_' or '-'")
+    if not adapter.default_model.strip() or not callable(adapter.generate):
+        raise ValueError("Provider adapter requires a default model and a callable generator")
+    PROVIDERS[key] = adapter
+    DEFAULT_MODELS[key] = adapter.default_model
+
+def _model(provider: str, model: str | None) -> str:
+    adapter = PROVIDERS.get(provider)
+    if adapter is None:
+        raise ValueError(f"Unsupported AI provider: {provider}")
+    return (model or os.getenv(f"{provider.upper()}_MODEL", "") or adapter.default_model).strip()
+
 def chat_text(*, provider: str = "openai", model: str | None = None, system: str, user: str) -> str:
     provider = provider.strip().lower()
-    if provider not in DEFAULT_MODELS:
+    adapter = PROVIDERS.get(provider)
+    if adapter is None:
         raise ValueError(f"Unsupported AI provider: {provider}")
     try:
-        selected = _model(provider, model)
-        if provider == "openai":
-            return _openai_chat(system, user, selected)
-        if provider == "anthropic":
-            return _anthropic_chat(system, user, selected)
-        return _gemini_chat(system, user, selected)
+        return adapter.generate(system, user, _model(provider, model), False)
     except LLMNotConfigured:
         return f"[LLM_NOT_CONFIGURED] {provider}: {user[:500]}"
 
 def chat_json(*, provider: str = "openai", model: str | None = None, system: str, user: str) -> dict:
     provider = provider.strip().lower()
-    if provider not in DEFAULT_MODELS:
+    adapter = PROVIDERS.get(provider)
+    if adapter is None:
         raise ValueError(f"Unsupported AI provider: {provider}")
-    selected = _model(provider, model)
-    if provider == "openai":
-        content = _openai_chat(system, user, selected, True)
-    elif provider == "anthropic":
-        content = _anthropic_chat(system, user, selected, True)
-    else:
-        content = _gemini_chat(system, user, selected, True)
+    content = adapter.generate(system, user, _model(provider, model), True)
     return json.loads(content)
