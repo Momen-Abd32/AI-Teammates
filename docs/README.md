@@ -6,6 +6,7 @@ This directory is the technical documentation set for AI Teammates. It describes
 
 | Document | Audience | Purpose |
 |---|---|---|
+| [Product Evolution Principles](PRODUCT_EVOLUTION.md) | Product stakeholders and contributors | General-purpose AI workforce direction, provider extensibility, guided and advanced experiences, and delivery principles |
 | [System Architecture](ARCHITECTURE.md) | Engineers, reviewers | Components, data flow, trust boundaries, and runtime topology |
 | [Development Guide](DEVELOPMENT_GUIDE.md) | Contributors | Prerequisites, local setup, run/build/test workflow |
 | [Configuration Reference](CONFIGURATION.md) | Developers and operators | Environment variables and provider/device settings |
@@ -15,7 +16,7 @@ This directory is the technical documentation set for AI Teammates. It describes
 | [Device Runtime](DEVICE_RUNTIME.md) | Desktop/runtime engineers | Device registration, commands, workspace boundaries, browser integration |
 | [API Reference](API.md) | Frontend and integration engineers | HTTP endpoints grouped by domain |
 | [Security Model](SECURITY.md) | All contributors | Authorization, approval boundaries, secrets, known production gaps |
-| [Testing Strategy](TESTING.md) | Contributors and reviewers | Test layers, commands, coverage expectations |
+| [Testing Strategy](TESTING.md) | Contributors and reviewers | Test layers, coverage expectations |
 | [Troubleshooting](TROUBLESHOOTING.md) | Developers and local users | Common startup, CORS, provider, memory, Redis and agent issues |
 | [Multi-Agent Device Runtime](MULTI_AGENT_DEVICE.md) | Runtime engineers | Agent-specific policy on a shared physical device |
 | [Project Blueprint](PROJECT_BLUEPRINT.md) | Project stakeholders | Product goals, domains, and roadmap overview |
